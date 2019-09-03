@@ -1,0 +1,23 @@
+---
+title: "lie_numbers_analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load libraries}
+
+
+```
+
+```{r data upload}
+
+# working directory for personal laptop
+setwd("C:/Users/Courtney/Documents/PhD/valter")
+temp = list.files(pattern = c("magnitudedata", "*.csv")) # list all CSV files in the directory
+myfiles = lapply(temp, read.csv) # read these CSV in the directory
+magnitudedata <- do.call(rbind.data.frame, myfiles) # convert and combine the CSV files into dataframe
+
+```
