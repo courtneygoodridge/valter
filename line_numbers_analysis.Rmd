@@ -7,17 +7,64 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r load libraries}
-
+```{r load packages}
+library(ggplot2)
+library(dplyr)
+library(car)
+library(MASS)
+library(dplyr)
+library(EnvStats)
+library(lme4)
+library(nlme)
+library(tidyr)
+library(rstanarm)
+library(bayesplot)
+library(loo)
+library(lmtest)
+library(caret)
+library(merTools)
+library(scales)
+library(fitdistrplus)
+library(readxl)
 
 ```
 
-```{r data upload}
-
+```{r data upload} 
+# rm(list = ls())
 # working directory for personal laptop
 setwd("C:/Users/Courtney/Documents/PhD/valter")
-temp = list.files(pattern = c("magnitudedata", "*.csv")) # list all CSV files in the directory
-myfiles = lapply(temp, read.csv) # read these CSV in the directory
-magnitudedata <- do.call(rbind.data.frame, myfiles) # convert and combine the CSV files into dataframe
+
+workingdata <- read_excel("Data_Lie_Numbers_Clean.xlsx")
 
 ```
+
+**Experiment description**
+
+Participants are told that they are hackers that have stolen codes. The police want to crack the code but participants have to communicate codes to their lawyers without being caught.
+
+**Control condition** 
+
+Participants shown just picture of the lawyers and a number. Participants have to respond with equivalent number (odd or even). 
+
+**Lie condition**
+
+In the lie condition, sometimes the picture was the lawyer and other times it was the cop. When it was the cop, they had to lie (i.e. they had to repond with the opposite key. If the number was odd they had to respond as if it was even). 
+
+In this lie condition, there are trials where the participant has to answer truthfully and also has to lie. 
+
+```{r data cleaning}
+
+cleanworkingdata <- workingdata %>%
+  dplyr::select(numbers, condition, key, accuracy, RTs, participant) %>%
+  arrange(participant)
+
+```
+
+**Understanding column names and data types**
+
+Key = even (a) or odd (g) (even in Italian is anche)
+
+Accuracy = correct (1) or incorrect(0)
+
+Condition = I see to only have condition "t" in this dataset?
+
