@@ -86,7 +86,29 @@ explie <- expdata %>%
 
 workingdata <- rbind(controldata, exptrue, explie)
 
-rm(controldata, expdata, explie, exptrue)
+# creating handedness variable
+left <- workingdata %>%
+  dplyr::filter(key == "a") %>%
+  mutate(hand = "left")
+
+right <- workingdata %>%
+  dplyr::filter(key == "g") %>%
+  mutate(hand = "right")
+
+workingdata <- rbind(left, right)
+
+# creating parity variable
+even <- workingdata %>%
+  dplyr::filter(numbers %% 2 == 0) %>%
+  mutate(parity = "even")
+
+odd <- workingdata %>%
+  dplyr::filter(numbers %% 2 == 1) %>%
+  mutate(parity = "odd")
+
+workingdata <- rbind(even, odd)
+
+rm(controldata, expdata, explie, exptrue, left, right, even, odd)
 
 ```
 
@@ -119,6 +141,5 @@ workingdata %>%
   dplyr::filter(accuracy == 0) %>%
   group_by(condition) %>%
   summarise(meanRT = mean(RTs))
-
 
 ```
