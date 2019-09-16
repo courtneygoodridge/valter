@@ -104,9 +104,21 @@ In **experimental conditon** 2/3 trials were true (standard SNARC) whereas the 1
 
 ```{r condition overview}
 
-controldata
+ggplot(dplyr::filter(workingdata, accuracy == 0), aes(condition)) +
+  geom_bar() +
+  theme_gray()
 
+# errors in each condition
+workingdata %>%
+  dplyr::filter(accuracy == 0) %>%
+  group_by(condition) %>%
+  summarise(errors = n())
 
+# mean RTS in each condition for correct repsonses
+workingdata %>%
+  dplyr::filter(accuracy == 0) %>%
+  group_by(condition) %>%
+  summarise(meanRT = mean(RTs))
 
 
 ```
