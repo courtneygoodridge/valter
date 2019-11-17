@@ -8,24 +8,34 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r load packages}
+
+# data vis
 library(ggplot2) # for plotting
+library(scales) # Scale Functions for Visualization
+
+# data manipulation
 library(dplyr) # data manipulation
+library(tidyr) # data manipulation
+library(readxl) # reading excel files 
+
+# stats
 library(car) # inferential stats
-library(MASS)
-library(dplyr)
-library(EnvStats)
-library(lme4)
-library(nlme)
-library(tidyr)
-library(rstanarm)
-library(bayesplot)
-library(loo)
-library(lmtest)
-library(caret)
-library(merTools)
-library(scales)
-library(fitdistrplus)
-library(readxl)
+library(MASS) # inferential stats
+library(EnvStats) # inferential stats
+
+# frequetist modelling/multi-level modelling
+library(lme4) # for linear mixed effects modelling
+library(nlme) # non linear mixed effects modelling
+library(fitdistrplus) # fitting distribution modelling 
+library(lmtest) # testing linear regression models
+library(caret) # classification and regression training
+library(merTools) # multi leveling modelling
+
+# bayesian modelling
+library(rstanarm) # for bayesian modelling
+library(bayesplot) # for bayesian modelling
+library(loo) # comparison of bayesian modelling
+
 
 ```
 
