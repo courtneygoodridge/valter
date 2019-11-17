@@ -201,4 +201,18 @@ ggplot(data = CIerror_bar, aes(x = parity, color = hand, group = hand, y = RTs))
 
 ```
 
+*Notes on this section of the analysis*
+
+*Line plots on left and right hand versus number responding to*
+Line plots match the ones displayed by Valter
+
+*Odd effect*
+Unsure why Valter has done an ANOVA for testing the parity because there are only 2 factors (odd and even). Either way, it comes out as non-signifcant. I also prefer the mean points with error bars rather than with bar charts.
+
+*2x2 ANOVA (parity x hand)*
+My data set seems to have more participants than Valter's which might explain why my results are significant and his are not. I also prefer the line graphs to see the interaction.
+
+*TO DO*
+
+- Check if I'm importing data right - I can import data from one excel files from multiple sheets? (Yes I can, I just need to figure out how).
 
