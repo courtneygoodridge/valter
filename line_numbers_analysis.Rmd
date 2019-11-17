@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # data vis
 library(ggplot2) # for plotting
 library(scales) # Scale Functions for Visualization
+library(gplots) # for plotting
 
 # data manipulation
 library(dplyr) # data manipulation
@@ -19,9 +20,12 @@ library(tidyr) # data manipulation
 library(readxl) # reading excel files 
 
 # stats
+library(ez) # allows me to perform the ANOVA
 library(car) # inferential stats
 library(MASS) # inferential stats
 library(EnvStats) # inferential stats
+library(Rmisc) # confidence intervals 
+library(sjstats) # for calculating effect sizes
 
 # frequetist modelling/multi-level modelling
 library(lme4) # for linear mixed effects modelling
@@ -35,7 +39,6 @@ library(merTools) # multi leveling modelling
 library(rstanarm) # for bayesian modelling
 library(bayesplot) # for bayesian modelling
 library(loo) # comparison of bayesian modelling
-
 
 ```
 
@@ -161,6 +164,7 @@ ggplot(dplyr::filter(workingdata, accuracy == 0) %>%
 
 ```{r ONLY LAYWER - control condition (RT)}
 
+# line graph demonstrating RTs over each number subjects were given
 ggplot(data = workingdata %>%
          dplyr::filter(condition == "controltrue") %>%
          dplyr::group_by(numbers, hand) %>%
@@ -168,6 +172,32 @@ ggplot(data = workingdata %>%
   geom_point() +
   geom_line()
 
+# bar charts (with 95% confidence intervals) shwoing RTs for odd and even numbers
+OddEffect <- workingdata %>%
+  dplyr::filter(condition == "controltrue")
+
+CI_OddEffect <- summarySE(OddEffect, measurevar = "RTs", groupvars = c("parity"))
+
+ggplot(CI_OddEffect, aes(x = parity, y = RTs)) + 
+  geom_line() +
+  geom_errorbar(aes(ymin = RTs - se, ymax = RTs + se), width = .1) +
+  geom_point()
+
+t.test(RTs ~ parity, data = OddEffect)
+
+# MARC effect bar chart (with 95% confidence intervals) for parity x hand - shows interaction
+
+result <- ezANOVA(workingdata, dv = RTs, wid = participant, within = .(parity, hand), type = 3, detailed = TRUE, return_aov = TRUE)
+result
+
+eta_sq(result$aov, partial = TRUE)
+
+CIerror_bar <- summarySE(workingdata, measurevar = "RTs", groupvars = c("parity", "hand"))
+
+ggplot(data = CIerror_bar, aes(x = parity, color = hand, group = hand, y = RTs)) +
+         stat_summary(fun.y = mean, geom = "point") +
+         stat_summary(fun.y = mean, geom = "line") +
+  geom_errorbar(aes(ymin = RTs - se, ymax = RTs + se), width = .1)
 
 ```
 
