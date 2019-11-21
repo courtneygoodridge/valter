@@ -8,6 +8,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r load packages}
+# opening data
+library(openxlsx) # loads data sets from multiple sheet
 
 # data vis
 library(ggplot2) # for plotting
@@ -47,15 +49,14 @@ library(loo) # comparison of bayesian modelling
 
 # load control data
 # set working directory on personal laptop
-setwd("C:/Users/Courtney/Documents/PhD/Valter")
-temp = list.files(pattern = c("ValterDataControl")) # list all CSV files in the directory
-myfiles = lapply(temp, read.csv) # read these CSV in the directory
-controldata<- do.call(rbind.data.frame, myfiles) # convert and combine the CSV files into dataframe
+#setwd("C:/Users/Courtney/Documents/PhD/Valter")
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/")
 
-# load experiment data
-temp = list.files(pattern = c("ValterDataExp")) # list all CSV files in the directory
-myfiles = lapply(temp, read.csv) # read these CSV in the directory
-expdata<- do.call(rbind.data.frame, myfiles) # convert and combine the CSV files into dataframe
+dat <- loadWorkbook("Data_Lie_Numbers_Clean.xlsx")
+sheetNames <- sheets(dat)
+for(i in 1:length(sheetNames)){
+  assign(sheetNames[i], readWorkbook(dat,sheet = i))
+}
 
 ```
 
