@@ -8,9 +8,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r load packages}
-# opening data
-library(openxlsx) # loads data sets from multiple sheet
-
 # data vis
 library(ggplot2) # for plotting
 library(scales) # Scale Functions for Visualization
@@ -20,6 +17,7 @@ library(gplots) # for plotting
 library(dplyr) # data manipulation
 library(tidyr) # data manipulation
 library(readxl) # reading excel files 
+library(openxlsx) # loads data sets from multiple sheets
 
 # stats
 library(ez) # allows me to perform the ANOVA
@@ -49,8 +47,8 @@ library(loo) # comparison of bayesian modelling
 
 # load control data
 # set working directory on personal laptop
-#setwd("C:/Users/Courtney/Documents/PhD/Valter")
-setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/")
+setwd("C:/Users/Courtney/Documents/PhD/Valter")
+# setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/")
 
 dat <- loadWorkbook("Data_Lie_Numbers_Clean.xlsx")
 sheetNames <- sheets(dat)
