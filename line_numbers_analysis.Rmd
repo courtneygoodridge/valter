@@ -7,8 +7,32 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Decsciption and aim of this markdown
+
+The aim of this markdown is replicate Valter's analysis of SNARC data using the R programming language. R provides a flexible way to analyse and visualise data. The markdown format allows for the analyse code to be separted into specific sections, and saved in html formt. Before I continue into the analysis, I will remind both myself and Valter of the experiment:
+
+**Experiment description - the context**
+
+Participants are told that they are hackers that have stolen codes. The police want to crack the code but participants have to communicate codes to their lawyers without being caught.
+
+**Control_SNARC** 
+
+Participants shown just picture of the lawyers and a number. Participants have to respond with equivalent number (odd or even). This is the standard SNARC with context of being in a court.
+
+**Lie_SNARC**
+
+In the lie condition, sometimes the picture is the lawyer and other times it is the cop. When it is the cop, they have to lie (i.e. repond with the opposite key, if the number is odd they had to respond as if it is  even). When the picture is a lawyer, they have to tell the truth (i.e. respond with the correct key). Here 2/3 trials are true (standard SNARC) whereas the 1/3 of trials participants had to lie (does this have any affect on the SNARC?
+
+**Understanding column names and data types from the raw data**
+
+Key: a = left key, g = right key 
+
+Accuracy: 1 = correct, 0 = incorrect
+
+## Loading packages
+
 ```{r load packages}
-# data vis
+# data visualisation
 library(ggplot2) # for plotting
 library(scales) # Scale Functions for Visualization
 library(gplots) # for plotting
@@ -19,7 +43,7 @@ library(tidyr) # data manipulation
 library(readxl) # reading excel files 
 library(openxlsx) # loads data sets from multiple sheets
 
-# stats
+# frequentist statistics
 library(ez) # allows me to perform the ANOVA
 library(car) # inferential stats
 library(MASS) # inferential stats
@@ -35,12 +59,16 @@ library(lmtest) # testing linear regression models
 library(caret) # classification and regression training
 library(merTools) # multi leveling modelling
 
-# bayesian modelling
+# bayesian modelling and comparison
 library(rstanarm) # for bayesian modelling
 library(bayesplot) # for bayesian modelling
 library(loo) # comparison of bayesian modelling
 
 ```
+
+Above I am loading the packages that will be necessary for the analysis. Each package has specific utilities that will be needed to perform analysis. It is important to load them at the start of your script otherwise you will encounter errors.
+
+## Loading data
 
 ```{r data upload} 
 # rm(list = ls())
@@ -58,36 +86,14 @@ for(i in 1:length(sheetNames)){
 
 ```
 
-**Experiment description**
+Here I am loading the data. I set my working directory using the *setwd()* function, and then load in data from both sheets of the excel file.
 
-Participants are told that they are hackers that have stolen codes. The police want to crack the code but participants have to communicate codes to their lawyers without being caught.
-
-**Control_SNARC** 
-
-Participants shown just picture of the lawyers and a number. Participants have to respond with equivalent number (odd or even). 
-
-**Lie_SNARC**
-
-In the lie condition, sometimes the picture was the lawyer and other times it was the cop. When it was the cop, they had to lie (i.e. they had to repond with the opposite key. If the number was odd they had to respond as if it was even). 
-
-In this lie condition, there are trials where the participant has to answer truthfully and also has to lie. 
-
-**Understanding column names and data types**
-
-Key: a = left key, g = right key 
-
-Accuracy: 1 = correct, 0 = incorrect
-
-Condition: controltrue = control condition (truth), exptrue = exp truth condition, explie = exp lie condition
-
-In the **Control_SNARC**, they had a standard SNARC with context of being in court
-
-In **Lie_SNARC** 2/3 trials were true (standard SNARC) whereas the 1/3 of trials participants had to lie.
+## Renaming conditions
 
 ```{r data cleaning - renaming conditions}
 
 # cleaning control condition
-Control_SNARC <- Control_SNARC %>%
+controldata <- Control_SNARC %>%
   dplyr::select(numbers, condition, key, accuracy, RTs, participant) %>%
   arrange(participant) %>%
   mutate(condition = "controltrue")
@@ -109,8 +115,21 @@ workingdata <- rbind(controldata, exptrue, explie)
 
 ```
 
+*Control*
 
-```{r data cleaning - renaming handedness}
+The piece of code above is mainly for my own benefit - I am just renaming conditions. From the *Control_SNARC* dataframe, I am selecting the important columns (numbers, condition, accuracy, RTs and participant), I then arrange them by participant, and then rename name the condition "controltrue". This indicates it was a control condition and subjects had to tell the truth. I name this new dataframe "controldata".
+
+*Experimental*
+
+I select the relevant columns in the Lie_SNARC condition and arrange by participant. I then create two dataframes: one containing trials where the subject was telling the truth (I rename this exptrue) and one containing trials where the subject was telling a lie (I rename this explie).
+
+*Overview*
+
+With these new condition names, I combine the three dataframes into one overall dataframe called workingdata. I will be using this for the analysis and visualisation.
+
+## Creating handedness column
+
+```{r data cleaning}
 # creating handedness variable
 left <- workingdata %>%
   dplyr::filter(key == "a") %>%
@@ -124,8 +143,11 @@ workingdata <- rbind(left, right)
 
 ```
 
+Again, this is for my own benefit. I am creating a column to replace "key". The new column is called hand and denotes the left or right hand to make it easier to understand the dataframe. I filter each key type into it's own dataframe, create a new "hand" and then recombine the dataframe.
 
-```{r data cleaning - renaming parity}
+## Creating parity column
+
+```{r data cleaning}
 
 # creating parity variable
 even <- workingdata %>%
@@ -142,6 +164,7 @@ rm(controldata, expdata, explie, exptrue, left, right, even, odd)
 
 ```
 
+Fianlly, I filter the data into odd and even number dataframes. I then create a a parity column indicating whether the number is odd or even. I recombine the dataframe and remove the other dataframes from the global environment using the *rm()* function. We are now ready to visualise some data. 
 
 ```{r overview conditions}
 
