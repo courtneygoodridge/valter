@@ -32,6 +32,7 @@ Accuracy: 1 = correct, 0 = incorrect
 ## Loading packages
 
 ```{r}
+# rm(list = ls())
 # data visualisation
 library(ggplot2) # for plotting
 library(scales) # Scale Functions for Visualization
@@ -157,7 +158,7 @@ odd <- workingdata %>%
 
 workingdata <- rbind(even, odd)
 
-rm(controldata, expdata, explie, exptrue, left, right, even, odd)
+rm(controldata, explie, exptrue, left, right, even, odd)
 ```
 
 Fianlly, I filter the data into odd and even number dataframes. I then create a a parity column indicating whether the number is odd or even. I recombine the dataframe and remove the other dataframes from the global environment using the *rm()* function. We are now ready to visualise some data. 
@@ -213,29 +214,42 @@ ggplot(dplyr::filter(workingdata, accuracy == 1) %>%
   theme_gray() 
 ```
 
+The above code computes the graphs for slide 2 in the presentation that you sent to me (and that I sent back to you). The graphs visualise:
 
-```{r ONLY LAYWER - control condition (RT)}
+- Number of errors per condition (more errors in the condition where the police officer was present)
+- Percentage of errors per condition (higher percentageof errors where the police officer was present)
+- Mean reaction time per conditon (fasted RTs for the control condition i.e. no pictures, just standard SNARC)
 
+I have tried to recreate the original graphs as closely as possible in order for you to see that it is possible to make these graphs in R.
+
+## Control condition RTs (lawyer only)
+
+```{r}
 # line graph demonstrating RTs over each number subjects were given
 ggplot(data = workingdata %>%
          dplyr::filter(condition == "controltrue") %>%
          dplyr::group_by(numbers, hand) %>%
-         summarise(meanRT = mean(RTs)), aes(x = numbers, y = meanRT, col = hand)) +
+         dplyr::summarise(meanRT = mean(RTs)), aes(x = numbers, y = meanRT, col = hand)) +
   geom_point() +
-  geom_line()
+  geom_line() +
+  scale_x_continuous("Numbers", breaks = seq(0, 9, 1)) +
+  scale_y_continuous("Mean RT (s)", breaks = seq(0, 0.62, 0.02)) +
+  ggtitle("RTs for left and right hands across numbers")
 
-# bar charts (with 95% confidence intervals) shwoing RTs for odd and even numbers
+# bar charts (with 95% confidence intervals) showing RTs for odd and even numbers
 OddEffect <- workingdata %>%
   dplyr::filter(condition == "controltrue")
 
 CI_OddEffect <- summarySE(OddEffect, measurevar = "RTs", groupvars = c("parity"))
 
 ggplot(CI_OddEffect, aes(x = parity, y = RTs)) + 
-  geom_line() +
-  geom_errorbar(aes(ymin = RTs - se, ymax = RTs + se), width = .1) +
-  geom_point()
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  geom_point() +
+  ylim(0.5, 0.6) +
+  ggtitle("Odd effect - mean RTs")
 
 t.test(RTs ~ parity, data = OddEffect)
+
 
 # MARC effect bar chart (with 95% confidence intervals) for parity x hand - shows interaction
 
@@ -253,13 +267,18 @@ ggplot(data = CIerror_bar, aes(x = parity, color = hand, group = hand, y = RTs))
 
 ```
 
-*Notes on this section of the analysis*
+This code chunk aims to replicate slide 3 of the summary analysis.
 
-*Line plots on left and right hand versus number responding to*
-Line plots match the ones displayed by Valter
+*Line graph*
 
-*Odd effect*
-Unsure why Valter has done an ANOVA for testing the parity because there are only 2 factors (odd and even). Either way, it comes out as non-signifcant. I also prefer the mean points with error bars rather than with bar charts.
+Line graph represents the mean reaction times for each hand (left and right) for various numbers in the control condition. I'm unsure what we expect here - whether the right hand is faster for numbers on the right side of the number line (5-9, and vice versa for left) or whether the left is faster for odd numbers and the right is faster for even numbers. Either way, the line graph matches the example.
+
+*95% CIs plot for odd effect*
+
+The 95% CIs match the example. Mean RTs a different however the confidence intervals overalp. I perform a t-test to compare the 2 means (I'm unsure why in the example an f value is computed instead of  t value). Either way, it comes out as non-signifcant. I also prefer the mean points with error bars rather than with bar charts.
+
+**TO DO**
+COMPUTE T-TEST WITH CORRECT NUMBER OF DEGREES OF FREEDOM.
 
 *2x2 ANOVA (parity x hand)*
 My data set seems to have more participants than Valter's which might explain why my results are significant and his are not. I also prefer the line graphs to see the interaction.
