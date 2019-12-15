@@ -1,5 +1,5 @@
 ---
-title: "lie_numbers_analysis"
+title: "Lie/numbers analysis"
 output: html_document
 ---
 
@@ -31,7 +31,7 @@ Accuracy: 1 = correct, 0 = incorrect
 
 ## Loading packages
 
-```{r load packages}
+```{r}
 # data visualisation
 library(ggplot2) # for plotting
 library(scales) # Scale Functions for Visualization
@@ -70,7 +70,7 @@ Above I am loading the packages that will be necessary for the analysis. Each pa
 
 ## Loading data
 
-```{r data upload} 
+```{r} 
 # rm(list = ls())
 
 # load control data
@@ -90,8 +90,7 @@ Here I am loading the data. I set my working directory using the *setwd()* funct
 
 ## Renaming conditions
 
-```{r data cleaning - renaming conditions}
-
+```{r}
 # cleaning control condition
 controldata <- Control_SNARC %>%
   dplyr::select(numbers, condition, key, accuracy, RTs, participant) %>%
@@ -129,7 +128,7 @@ With these new condition names, I combine the three dataframes into one overall 
 
 ## Creating handedness column
 
-```{r data cleaning}
+```{r}
 # creating handedness variable
 left <- workingdata %>%
   dplyr::filter(key == "a") %>%
@@ -140,15 +139,13 @@ right <- workingdata %>%
   mutate(hand = "right")
 
 workingdata <- rbind(left, right)
-
 ```
 
-Again, this is for my own benefit. I am creating a column to replace "key". The new column is called hand and denotes the left or right hand to make it easier to understand the dataframe. I filter each key type into it's own dataframe, create a new "hand" and then recombine the dataframe.
+Again, this is for my own benefit. I am creating a column to replace "key". The new column is called hand and denotes the left or right hand to make it easier to understand the dataframe. I filter each key type into it's own dataframe, create a new "hand" variable and then recombine the dataframe.
 
 ## Creating parity column
 
-```{r data cleaning}
-
+```{r}
 # creating parity variable
 even <- workingdata %>%
   dplyr::filter(numbers %% 2 == 0) %>%
@@ -161,34 +158,59 @@ odd <- workingdata %>%
 workingdata <- rbind(even, odd)
 
 rm(controldata, expdata, explie, exptrue, left, right, even, odd)
-
 ```
 
 Fianlly, I filter the data into odd and even number dataframes. I then create a a parity column indicating whether the number is odd or even. I recombine the dataframe and remove the other dataframes from the global environment using the *rm()* function. We are now ready to visualise some data. 
 
-```{r overview conditions}
+## Overview so far
+
+I have cleaned the data and set it up in a way I feel comfortable. The data manipulation so is really personal preference, but I will be using the variables/variables names for the rest of the analysis.
+
+## Overview conditions - error per condition and mean RTs
+
+```{r}
+# errors percentage 
+
+ggplot(workingdata %>%
+  dplyr::group_by(condition, accuracy) %>%
+  dplyr::summarise(acc_num = n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(condition) %>%
+  dplyr::mutate(perc = (acc_num / sum(acc_num)) * 100) %>%
+  dplyr::filter(accuracy == 0), aes(x = condition, y = perc)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = round(perc, 2),  vjust = -1)) +
+  ylim(0, 15) +
+  ylab("Percentage of errors (%)") +
+  scale_x_discrete("Condition", labels = c("controltrue" = "Control", "explie" = "Police", "exptrue" = "Lawyer")) +
+  ggtitle("Percentage of errors per condition") +
+  theme_gray() 
 
 # errors in each condition
 
 ggplot(dplyr::filter(workingdata, accuracy == 0) %>%
-         group_by(condition) %>%
-         summarise(errors = n()), aes(x = condition, y = errors)) +
+         dplyr::group_by(condition) %>%
+         dplyr::summarise(errors = n()), aes(x = condition, y = errors)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = errors)) +
+  geom_text(aes(label = errors, vjust = -1)) +
+  ylim(0, 900) +
+  ylab("Numbers of errors") +
+  scale_x_discrete("Condition", labels = c("controltrue" = "Control", "explie" = "Police", "exptrue" = "Lawyer")) +
   ggtitle("Number of errors per condition") +
   theme_gray() 
 
 # mean RTS in each condition for correct repsonses
 
-ggplot(dplyr::filter(workingdata, accuracy == 0) %>%
-         group_by(condition) %>%
-         summarise(meanRT = mean(RTs)), aes(x = condition, y = meanRT)) +
+ggplot(dplyr::filter(workingdata, accuracy == 1) %>%
+         dplyr::group_by(condition) %>%
+         dplyr::summarise(meanRT = mean(RTs)), aes(x = condition, y = meanRT)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = meanRT)) +
-  ggtitle("Mean reaction time (s)") +
+  geom_text(aes(label = round(meanRT, 2), vjust = -1)) +
+  ylim(0, 1.2) +
+  ylab("Mean reaction times (s)") +
+  scale_x_discrete("Condition", labels = c("controltrue" = "Control", "explie" = "Police", "exptrue" = "Lawyer")) +
+  ggtitle("Mean reaction time per condition") +
   theme_gray() 
-
-
 ```
 
 
