@@ -9,21 +9,21 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Decsciption and aim of this markdown
 
-The aim of this markdown is replicate Valter's analysis of SNARC data using the R programming language. R provides a flexible way to analyse and visualise data. The markdown format allows for the analyse code to be separted into specific sections, and saved in html formt. Before I continue into the analysis, I will remind both myself and Valter of the experiment:
+The aim of this markdown is replicate Valter's analysis of SNARC data using the R programming language. R provides a flexible way to analyse and visualise data. The markdown format allows for the analyse code to be separted into specific sections, and saved in html format. Before I continue into the analysis, I will remind both myself and Valter of the experiment:
 
-**Experiment description - the context**
+## Experiment description - the context
 
 Participants are told that they are hackers that have stolen codes. The police want to crack the code but participants have to communicate codes to their lawyers without being caught.
 
-**Control_SNARC** 
+## Control_SNARC 
 
-Participants shown just picture of the lawyers and a number. Participants have to respond with equivalent number (odd or even). This is the standard SNARC with context of being in a court.
+Participants shown just picture of the lawyer and a number. Participants have to respond with equivalent number (odd or even). This is the standard SNARC with context of being in a court.
 
-**Lie_SNARC**
+## Lie_SNARC
 
-In the lie condition, sometimes the picture is the lawyer and other times it is the cop. When it is the cop, they have to lie (i.e. repond with the opposite key, if the number is odd they had to respond as if it is  even). When the picture is a lawyer, they have to tell the truth (i.e. respond with the correct key). Here 2/3 trials are true (standard SNARC) whereas the 1/3 of trials participants had to lie (does this have any affect on the SNARC?
+In the lie condition, sometimes the picture is the lawyer and other times it is the cop. When it is the cop, they have to lie (i.e. repond with the opposite key, if the number is odd they had to respond as if it is  even). When the picture is a lawyer, they have to tell the truth (i.e. respond with the correct key). Here 2/3 trials are true (standard SNARC) whereas the 1/3 of trials participants had to lie (does this have any effect on the SNARC?)
 
-**Understanding column names and data types from the raw data**
+## Understanding column names and data types from the raw data
 
 Key: a = left key, g = right key 
 
@@ -31,7 +31,7 @@ Accuracy: 1 = correct, 0 = incorrect
 
 ## Loading packages
 
-```{r}
+```{r echo = TRUE,  message = 'hide', warning = 'hide', results = 'hide'}
 # rm(list = ls())
 # data visualisation
 library(ggplot2) # for plotting
@@ -71,7 +71,7 @@ Above I am loading the packages that will be necessary for the analysis. Each pa
 
 ## Loading data
 
-```{r} 
+```{r echo = TRUE, message = 'hide', warning = 'hide', results = 'hide'} 
 # rm(list = ls())
 
 # load control data
@@ -115,7 +115,7 @@ workingdata <- rbind(controldata, exptrue, explie)
 
 ```
 
-*Control*
+**Control**
 
 The piece of code above is mainly for my own benefit - I am just renaming conditions. From the *Control_SNARC* dataframe, I am selecting the important columns (numbers, condition, accuracy, RTs and participant), I then arrange them by participant, and then rename name the condition "controltrue". This indicates it was a control condition and subjects had to tell the truth. I name this new dataframe "controldata".
 
@@ -222,7 +222,7 @@ The above code computes the graphs for slide 2 in the presentation that you sent
 
 I have tried to recreate the original graphs as closely as possible in order for you to see that it is possible to make these graphs in R.
 
-## Control condition RTs (lawyer only)
+## Control condition RTs (lawyer only) - MARC effect
 
 ```{r}
 # line graph demonstrating RTs over each number subjects were given
@@ -253,12 +253,15 @@ t.test(RTs ~ parity, data = OddEffect)
 
 # MARC effect bar chart (with 95% confidence intervals) for parity x hand - shows interaction
 
-result <- ezANOVA(workingdata, dv = RTs, wid = participant, within = .(parity, hand), type = 3, detailed = TRUE, return_aov = TRUE)
+lawyeronly <- workingdata %>%
+  dplyr::filter(condition == "controltrue")
+
+result <- ezANOVA(lawyeronly, dv = RTs, wid = participant, within = .(parity, hand), type = 3, detailed = TRUE, return_aov = TRUE)
 result
 
 eta_sq(result$aov, partial = TRUE)
 
-CIerror_bar <- summarySE(workingdata, measurevar = "RTs", groupvars = c("parity", "hand"))
+CIerror_bar <- summarySE(lawyeronly, measurevar = "RTs", groupvars = c("parity", "hand"))
 
 ggplot(data = CIerror_bar, aes(x = parity, color = hand, group = hand, y = RTs)) +
          stat_summary(fun.y = mean, geom = "point") +
@@ -267,23 +270,43 @@ ggplot(data = CIerror_bar, aes(x = parity, color = hand, group = hand, y = RTs))
 
 ```
 
-This code chunk aims to replicate slide 3 of the summary analysis.
+This code chunk aims to replicate slide 3 of the summary analysis. The results of the t-test and ANOVA slightly differ, however by looking at the degrees of freedom is looks like this could due to different numbers of participants when you originally analysed the data.
 
-*Line graph*
+**Line graph**
 
 Line graph represents the mean reaction times for each hand (left and right) for various numbers in the control condition. I'm unsure what we expect here - whether the right hand is faster for numbers on the right side of the number line (5-9, and vice versa for left) or whether the left is faster for odd numbers and the right is faster for even numbers. Either way, the line graph matches the example.
 
-*95% CIs plot for odd effect*
+**95% CIs plot for odd effect**
 
 The 95% CIs match the example. Mean RTs a different however the confidence intervals overalp. I perform a t-test to compare the 2 means (I'm unsure why in the example an f value is computed instead of  t value). Either way, it comes out as non-signifcant. I also prefer the mean points with error bars rather than with bar charts.
+
+**T-test for the odd effect**
+
+TO DO
+
+**2x2 factorial ANOVA**
+
+The results demonstrate no significant main effects but there is a significant interaction (large effect size). This appears to be standard MARC effect i.e. RTs are faster when the parity and hand you respond are congruent.
 
 **TO DO**
 COMPUTE T-TEST WITH CORRECT NUMBER OF DEGREES OF FREEDOM.
 
-*2x2 ANOVA (parity x hand)*
-My data set seems to have more participants than Valter's which might explain why my results are significant and his are not. I also prefer the line graphs to see the interaction.
+## Control condition RTs (lawyer only) - SNARC effect
 
-*TO DO*
+```{r}
 
-- Check if I'm importing data right - I can import data from one excel files from multiple sheets? (Yes I can, I just need to figure out how).
+small <- lawyeronly %>%
+  dplyr::filter(numbers <= 4) %>%
+  dplyr::mutate(magnitude = "small")
+
+large <- lawyeronly %>%
+  dplyr::filter(numbers > 4) %>%
+  dplyr::mutate(magnitude = "large")
+
+
+
+```
+
+
+
 
