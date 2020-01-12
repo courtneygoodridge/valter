@@ -256,17 +256,17 @@ t.test(RTs ~ parity, data = OddEffect)
 lawyeronly <- workingdata %>%
   dplyr::filter(condition == "controltrue")
 
-result <- ezANOVA(lawyeronly, dv = RTs, wid = participant, within = .(parity, hand), type = 3, detailed = TRUE, return_aov = TRUE)
-result
+result_MARC <- ezANOVA(lawyeronly, dv = RTs, wid = participant, within = .(parity, hand), type = 3, detailed = TRUE, return_aov = TRUE)
+result_MARC
 
-eta_sq(result$aov, partial = TRUE)
+eta_sq(result_MARC$aov, partial = TRUE)
 
-CIerror_bar <- summarySE(lawyeronly, measurevar = "RTs", groupvars = c("parity", "hand"))
+CIerror_bar_MARC <- summarySE(lawyeronly, measurevar = "RTs", groupvars = c("parity", "hand"))
 
-ggplot(data = CIerror_bar, aes(x = parity, color = hand, group = hand, y = RTs)) +
+ggplot(data = CIerror_bar_MARC, aes(x = parity, color = hand, group = hand, y = RTs)) +
          stat_summary(fun.y = mean, geom = "point") +
          stat_summary(fun.y = mean, geom = "line") +
-  geom_errorbar(aes(ymin = RTs - se, ymax = RTs + se), width = .1)
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1)
 
 ```
 
@@ -286,7 +286,7 @@ TO DO
 
 **2x2 factorial ANOVA**
 
-The results demonstrate no significant main effects but there is a significant interaction (large effect size). This appears to be standard MARC effect i.e. RTs are faster when the parity and hand you respond are congruent.
+The results demonstrate no significant main effects but there is a significant interaction (large effect size). This appears to be standard MARC effect i.e. RTs are faster when the parity and hand you respond are congruent (even with right, odd with left). 
 
 **TO DO**
 COMPUTE T-TEST WITH CORRECT NUMBER OF DEGREES OF FREEDOM.
@@ -294,7 +294,7 @@ COMPUTE T-TEST WITH CORRECT NUMBER OF DEGREES OF FREEDOM.
 ## Control condition RTs (lawyer only) - SNARC effect
 
 ```{r}
-
+# creating magnitude variable
 small <- lawyeronly %>%
   dplyr::filter(numbers <= 4) %>%
   dplyr::mutate(magnitude = "small")
@@ -303,10 +303,48 @@ large <- lawyeronly %>%
   dplyr::filter(numbers > 4) %>%
   dplyr::mutate(magnitude = "large")
 
+lawyeronly <- rbind(small, large)
+
+# SNARC effect ANOVA
+
+result_SNARC <- ezANOVA(lawyeronly, dv = RTs, wid = participant, within = .(magnitude, hand), type = 3, detailed = TRUE, return_aov = TRUE)
+result_SNARC
+
+eta_sq(result_SNARC$aov, partial = TRUE)
+
+
+CIerror_bar_SNARC <- summarySE(lawyeronly, measurevar = "RTs", groupvars = c("magnitude", "hand"))
+
+ggplot(data = CIerror_bar_SNARC, aes(x = magnitude, color = hand, group = hand, y = RTs)) +
+         stat_summary(fun.y = mean, geom = "point") +
+         stat_summary(fun.y = mean, geom = "line") +
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1)
+
+# regression plot
+
+lawyeronly$numbers <- as.numeric(lawyeronly$numbers)
+
+ggplot(data = lawyeronly %>%
+         dplyr::group_by(numbers) %>%
+         dplyr::summarise(m = mean(RTs)), aes(x = numbers, y = m)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_x_continuous(breaks = seq(1, 9, 1), limits = c(1, 9)) +
+  ggtitle("Linear model of number magnitude and RTs")
 
 
 ```
 
+Firstly I make dataframes *small* and *large* in order to compute a new variable called magnitude. This will be used (alongside hand) to analyse the SNARC effect
 
+**2x2 factorial ANOVA**
 
+Significant main effect of magnitude (smaller number reacted to faster) however more importantly, a significant interatcion with large effect size. This indicates a classic SNARC in the only lawyer control condition (i.e. when responding to larger numbers with right hard, RTs are faster. When responding to small numbers with left hand, RTs are faster). 
 
+**Regression (linear model)**
+
+Rgression plot shows positive relationship between number magnitude and RTs i.e. as number magnitude increases, so do RTs. 
+
+**TO DO**
+
+Perform regression and see if it matches Valter's on slide 4
