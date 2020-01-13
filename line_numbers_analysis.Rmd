@@ -76,8 +76,8 @@ Above I am loading the packages that will be necessary for the analysis. Each pa
 
 # load control data
 # set working directory on personal laptop
-setwd("C:/Users/Courtney/Documents/PhD/Valter")
-# setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/")
+# setwd("C:/Users/Courtney/Documents/PhD/Valter")
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/")
 
 dat <- loadWorkbook("Data_Lie_Numbers_Clean.xlsx")
 sheetNames <- sheets(dat)
@@ -167,7 +167,7 @@ Fianlly, I filter the data into odd and even number dataframes. I then create a 
 
 I have cleaned the data and set it up in a way I feel comfortable. The data manipulation so is really personal preference, but I will be using the variables/variables names for the rest of the analysis.
 
-## Overview conditions - error per condition and mean RTs
+## Overview conditions - error per condition and mean RTs (replication of slide 2)
 
 ```{r}
 # errors percentage 
@@ -222,7 +222,7 @@ The above code computes the graphs for slide 2 in the presentation that you sent
 
 I have tried to recreate the original graphs as closely as possible in order for you to see that it is possible to make these graphs in R.
 
-## Control condition RTs (lawyer only) - MARC effect
+## Control condition RTs (lawyer only) - MARC effect (replication of slide 3)
 
 ```{r}
 # line graph demonstrating RTs over each number subjects were given
@@ -245,7 +245,7 @@ CI_OddEffect <- summarySE(OddEffect, measurevar = "RTs", groupvars = c("parity")
 ggplot(CI_OddEffect, aes(x = parity, y = RTs)) + 
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   geom_point() +
-  ylim(0.5, 0.6) +
+  ylim(0.55, 0.60) +
   ggtitle("Odd effect - mean RTs")
 
 t.test(RTs ~ parity, data = OddEffect)
@@ -291,7 +291,7 @@ The results demonstrate no significant main effects but there is a significant i
 **TO DO**
 COMPUTE T-TEST WITH CORRECT NUMBER OF DEGREES OF FREEDOM.
 
-## Control condition RTs (lawyer only) - SNARC effect
+## Control condition RTs (lawyer only) - SNARC effect (replication of slide 4)
 
 ```{r}
 # creating magnitude variable
@@ -330,9 +330,9 @@ ggplot(data = lawyeronly %>%
   geom_point() +
   geom_smooth(method = "lm") +
   scale_x_continuous(breaks = seq(1, 9, 1), limits = c(1, 9)) +
-  ggtitle("Linear model of number magnitude and RTs")
-
-
+  ggtitle("Linear model of number magnitude and RTs") +
+  xlab("Numbers (magnitude)") +
+  ylab("mean reaction time (s)")
 ```
 
 Firstly I make dataframes *small* and *large* in order to compute a new variable called magnitude. This will be used (alongside hand) to analyse the SNARC effect
@@ -343,8 +343,31 @@ Significant main effect of magnitude (smaller number reacted to faster) however 
 
 **Regression (linear model)**
 
-Rgression plot shows positive relationship between number magnitude and RTs i.e. as number magnitude increases, so do RTs. 
+I was a litte bit confused about the regression here. On slide 4, it appears you plot the number magnitudes against differences in reaction times for the SNARC effect? I have plotted the number magnitudes against average reaction times which is slightly different. Happy to have another go once I understand what the regression in slide 4 is trying to show.
 
-**TO DO**
+##  Control condition errors (lawyer only) - (replication of slide 5)
 
-Perform regression and see if it matches Valter's on slide 4
+```{r}
+ggplot(lawyeronly %>%
+         dplyr::group_by(parity, accuracy) %>%
+         dplyr::summarise(acc_num = n()) %>%
+         dplyr::ungroup() %>%
+         dplyr::group_by(parity) %>%
+         dplyr::mutate(perc = (acc_num / sum(acc_num)) * 100) %>%
+         dplyr::filter(accuracy == 0), aes(x = parity, y = acc_num)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = acc_num, vjust = -1)) +
+  ylim(0, 100) +
+  ylab("Numbers of errors") +
+  scale_x_discrete("Parity", labels = c("odd" = "Odd", "even" = "Even")) +
+  ggtitle("Number of errors per parity") +
+  theme_gray() 
+
+
+
+
+```
+
+**TO DO** 
+
+Compute t test for errors for odd and even numbers.
