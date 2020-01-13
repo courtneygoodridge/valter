@@ -360,8 +360,16 @@ ggplot(lawyeronly %>%
   ylim(0, 100) +
   ylab("Numbers of errors") +
   scale_x_discrete("Parity", labels = c("odd" = "Odd", "even" = "Even")) +
-  ggtitle("Number of errors per parity") +
+  ggtitle("Number of errors per parity (Odd effect)") +
   theme_gray() 
+
+# MARC effect for errors
+
+lawyeronly %>%
+  dplyr::group_by(participant, parity, hand, accuracy) %>%
+  dplyr::summarise(acc_num = n()) %>%
+  dplyr::filter(accuracy == 0) 
+
 
 
 
