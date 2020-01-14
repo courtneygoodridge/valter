@@ -85,6 +85,8 @@ for(i in 1:length(sheetNames)){
   assign(sheetNames[i], readWorkbook(dat, sheet = i))
 }
 
+# dput(head(df,n)) provides example of data structure for stack overflow
+
 ```
 
 Here I am loading the data. I set my working directory using the *setwd()* function, and then load in data from both sheets of the excel file.
@@ -363,18 +365,44 @@ ggplot(lawyeronly %>%
   ggtitle("Number of errors per parity (Odd effect)") +
   theme_gray() 
 
-# MARC effect for errors
+# MARC effect for errors/accuracy
 
-lawyeronly %>%
-  dplyr::group_by(participant, parity, hand, accuracy) %>%
-  dplyr::summarise(acc_num = n()) %>%
-  dplyr::filter(accuracy == 0) 
+lawyeronly$hand = factor(lawyeronly$hand, levels=c("right", "left"))
+lawyeronly$parity = factor(lawyeronly$parity, levels=c("even", "odd"))
 
+model <- glm(accuracy ~ hand * parity + participant,
+             data = lawyeronly,
+             family=binomial)
+summary(model)
 
+lawyeronly %>% 
+  dplyr::group_by(hand, parity) %>% 
+  dplyr::summarize(mean_acc = mean(accuracy))
 
+CIerror_bar_MARC <- summarySE(lawyeronly, measurevar = "accuracy", groupvars = c("parity", "hand"))
+
+ggplot(data = CIerror_bar_MARC, aes(x = parity, color = hand, group = hand, y = accuracy)) +
+         stat_summary(fun.y = mean, geom = "point") +
+         stat_summary(fun.y = mean, geom = "line") +
+  geom_errorbar(aes(ymin = accuracy - ci, ymax = accuracy + ci), width = .1) +
+  ylab("Response accuracy (%)") +
+  xlab("Parity") +
+  ggtitle("MARC effect - error analysis")
+
+# SNARC effect for errors/accuracy
 
 
 ```
+
+**Error analysis of the MARC effect**
+
+To perform the error analysis, I compute a multiple logistic regression. Because accuracy is a dichotomous dependent variable,the assumptions of a standard ANOVA will be violated. Hence a logistic regression can be used to model an event that exists in pass/fail, correct/error state, such as accuracy in this case.
+
+First I set up my factors for hand and parity. I then  run a generalised linear model and specify the family as binomial. This allows me to compute the logistic regression
+
+The results of the logistic regression demonstrate a significant interaction. The object *handleft:parityodd* highlights which of the parity/hand pairs is driving the interaction, whereby the probability of an accurate response is significantly reduced.
+
+The line plot visualises this interaction, whereby accuracy is reduced for left + odd pairs and right + even pairs. This is the opposite of the traditional MARC effect. 
 
 **TO DO** 
 
