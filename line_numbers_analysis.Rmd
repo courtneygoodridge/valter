@@ -350,6 +350,8 @@ I was a litte bit confused about the regression here. On slide 4, it appears you
 ##  Control condition errors (lawyer only) - (replication of slide 5)
 
 ```{r}
+
+# Odd effect
 ggplot(lawyeronly %>%
          dplyr::group_by(parity, accuracy) %>%
          dplyr::summarise(acc_num = n()) %>%
@@ -366,9 +368,8 @@ ggplot(lawyeronly %>%
   theme_gray() 
 
 # MARC effect for errors/accuracy
-
-lawyeronly$hand = factor(lawyeronly$hand, levels=c("right", "left"))
-lawyeronly$parity = factor(lawyeronly$parity, levels=c("even", "odd"))
+lawyeronly$hand = factor(lawyeronly$hand, levels = c("right", "left"))
+lawyeronly$parity = factor(lawyeronly$parity, levels = c("even", "odd"))
 
 model <- glm(accuracy ~ hand * parity + participant,
              data = lawyeronly,
@@ -379,9 +380,9 @@ lawyeronly %>%
   dplyr::group_by(hand, parity) %>% 
   dplyr::summarize(mean_acc = mean(accuracy))
 
-CIerror_bar_MARC <- summarySE(lawyeronly, measurevar = "accuracy", groupvars = c("parity", "hand"))
+MARC_errors <- summarySE(lawyeronly, measurevar = "accuracy", groupvars = c("parity", "hand"))
 
-ggplot(data = CIerror_bar_MARC, aes(x = parity, color = hand, group = hand, y = accuracy)) +
+ggplot(data = MARC_errors, aes(x = parity, color = hand, group = hand, y = accuracy)) +
          stat_summary(fun.y = mean, geom = "point") +
          stat_summary(fun.y = mean, geom = "line") +
   geom_errorbar(aes(ymin = accuracy - ci, ymax = accuracy + ci), width = .1) +
@@ -390,7 +391,27 @@ ggplot(data = CIerror_bar_MARC, aes(x = parity, color = hand, group = hand, y = 
   ggtitle("MARC effect - error analysis")
 
 # SNARC effect for errors/accuracy
+lawyeronly$hand = factor(lawyeronly$hand, levels = c("right", "left"))
+lawyeronly$magnitude = factor(lawyeronly$magnitude, levels = c("small", "large"))
 
+model <- glm(accuracy ~ hand * magnitude + participant,
+             data = lawyeronly,
+             family = binomial)
+summary(model)
+
+lawyeronly %>% 
+  dplyr::group_by(hand, magnitude) %>% 
+  dplyr::summarize(mean_acc = mean(accuracy))
+
+SNARC_errors <- summarySE(lawyeronly, measurevar = "accuracy", groupvars = c("magnitude", "hand"))
+
+ggplot(data = SNARC_errors, aes(x = magnitude, color = hand, group = hand, y = accuracy)) +
+         stat_summary(fun.y = mean, geom = "point") +
+         stat_summary(fun.y = mean, geom = "line") +
+  geom_errorbar(aes(ymin = accuracy - ci, ymax = accuracy + ci), width = .1) +
+  ylab("Response accuracy (%)") +
+  xlab("Magnitude") +
+  ggtitle("SNARC effect - error analysis")
 
 ```
 
@@ -400,10 +421,22 @@ To perform the error analysis, I compute a multiple logistic regression. Because
 
 First I set up my factors for hand and parity. I then  run a generalised linear model and specify the family as binomial. This allows me to compute the logistic regression
 
-The results of the logistic regression demonstrate a significant interaction. The object *handleft:parityodd* highlights which of the parity/hand pairs is driving the interaction, whereby the probability of an accurate response is significantly reduced.
+The results of the logistic regression demonstrate a significant interaction. By looking at the average accuracy percentage of each parity/hand pair, we can see what is driving the interaction. The output suggests that when compared to another pairing, the *handleft:parityodd* pairing significantly reduces the probability of an accurate response. Intuitively this seems to be the opposite of the traditional MARC effect (higher accuracy when parity and hand are congruant). Thus I implement a line plot to visualise the significant interaction.
 
-The line plot visualises this interaction, whereby accuracy is reduced for left + odd pairs and right + even pairs. This is the opposite of the traditional MARC effect. 
+The line plot visualises this interaction. Accuracy is reduced for left + odd pairs and right + even pairs. This is the opposite of the traditional MARC effect. 
+
+**Error analysis of the SNARC effect**
+
+Once again, I compute a logistic regression which results in a significant interaction. 
+
+The *handleft:magnitudelarge* pairing estimate suggests that when compared against another pairing, the probability of an accurate response increases. Intuitively this seems to be the opposite of the traditional SNARC effect (lower accuracy when magnitude and hand are incongruant). Thus I implement a line plot to visualise the significant interaction.
+
+The line plot visualises this interaction. Accuracy is reduced for left + small pairs and right + large pairs. This is the opposite of the traditional SNARC effect.
+
+**Overview**
+
+Hence the logistic regression analysis matches the analysis on slide 5, however I feel I have used more appropriate analyse techniques given the nature of the data. 
 
 **TO DO** 
 
-Compute t test for errors for odd and even numbers.
+Compute t test for errors for odd and even numbers - is there such thing as a logistic regression?
