@@ -443,3 +443,11 @@ The line plot visualises this interaction. Accuracy is reduced for left + small 
 **Overview**
 
 Logistic regression analysis matches the analysis on slide 5. Despite matching, I believe I have used a more appropriate analyse techniques given the nature of the data (dichotomous variables).
+
+
+
+**TO DO **
+
+Write up summary of analyse so far
+
+Analyse data for experimental condition (lawyer and cop)
