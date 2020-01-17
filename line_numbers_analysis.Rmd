@@ -64,7 +64,6 @@ library(merTools) # multi leveling modelling
 library(rstanarm) # for bayesian modelling
 library(bayesplot) # for bayesian modelling
 library(loo) # comparison of bayesian modelling
-
 ```
 
 Above I am loading the packages that will be necessary for the analysis. Each package has specific utilities that will be needed to perform analysis. It is important to load them at the start of your script otherwise you will encounter errors.
@@ -72,7 +71,8 @@ Above I am loading the packages that will be necessary for the analysis. Each pa
 ## Loading data
 
 ```{r echo = TRUE, message = 'hide', warning = 'hide', results = 'hide'} 
-# rm(list = ls())
+# rm(list = ls()) clears environment
+# dput(head(df,n)) provides example of data structure for stack overflow
 
 # load control data
 # set working directory on personal laptop
@@ -84,9 +84,6 @@ sheetNames <- sheets(dat)
 for(i in 1:length(sheetNames)){
   assign(sheetNames[i], readWorkbook(dat, sheet = i))
 }
-
-# dput(head(df,n)) provides example of data structure for stack overflow
-
 ```
 
 Here I am loading the data. I set my working directory using the *setwd()* function, and then load in data from both sheets of the excel file.
@@ -173,7 +170,6 @@ I have cleaned the data and set it up in a way I feel comfortable. The data mani
 
 ```{r}
 # errors percentage 
-
 ggplot(workingdata %>%
   dplyr::group_by(condition, accuracy) %>%
   dplyr::summarise(acc_num = n()) %>%
@@ -186,11 +182,10 @@ ggplot(workingdata %>%
   ylim(0, 15) +
   ylab("Percentage of errors (%)") +
   scale_x_discrete("Condition", labels = c("controltrue" = "Control", "explie" = "Police", "exptrue" = "Lawyer")) +
-  ggtitle("Percentage of errors per condition") +
+  ggtitle("Errors %") +
   theme_gray() 
 
 # errors in each condition
-
 ggplot(dplyr::filter(workingdata, accuracy == 0) %>%
          dplyr::group_by(condition) %>%
          dplyr::summarise(errors = n()), aes(x = condition, y = errors)) +
@@ -199,11 +194,10 @@ ggplot(dplyr::filter(workingdata, accuracy == 0) %>%
   ylim(0, 900) +
   ylab("Numbers of errors") +
   scale_x_discrete("Condition", labels = c("controltrue" = "Control", "explie" = "Police", "exptrue" = "Lawyer")) +
-  ggtitle("Number of errors per condition") +
+    ggtitle("Errors") +
   theme_gray() 
 
 # mean RTS in each condition for correct repsonses
-
 ggplot(dplyr::filter(workingdata, accuracy == 1) %>%
          dplyr::group_by(condition) %>%
          dplyr::summarise(meanRT = mean(RTs)), aes(x = condition, y = meanRT)) +
@@ -212,7 +206,7 @@ ggplot(dplyr::filter(workingdata, accuracy == 1) %>%
   ylim(0, 1.2) +
   ylab("Mean reaction times (s)") +
   scale_x_discrete("Condition", labels = c("controltrue" = "Control", "explie" = "Police", "exptrue" = "Lawyer")) +
-  ggtitle("Mean reaction time per condition") +
+  ggtitle("Mean RT") +
   theme_gray() 
 ```
 
@@ -222,7 +216,7 @@ The above code computes the graphs for slide 2 in the presentation that you sent
 - Percentage of errors per condition (higher percentageof errors where the police officer was present)
 - Mean reaction time per conditon (fasted RTs for the control condition i.e. no pictures, just standard SNARC)
 
-I have tried to recreate the original graphs as closely as possible in order for you to see that it is possible to make these graphs in R.
+I have tried to recreate the original graphs as closely as possible in order for you to see that it is possible to make these graphs in R. I have titled them as you have in the presentation to make it easier to which graph relates to which. 
 
 ## Control condition RTs (lawyer only) - MARC effect (replication of slide 3)
 
@@ -248,13 +242,13 @@ ggplot(CI_OddEffect, aes(x = parity, y = RTs)) +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   geom_point() +
   ylim(0.55, 0.60) +
-  ggtitle("Odd effect - mean RTs")
+  ggtitle("Odd effect")
 
+### NEED TO SORT THIS
 t.test(RTs ~ parity, data = OddEffect)
-
+### NEED TO SORT THIS
 
 # MARC effect bar chart (with 95% confidence intervals) for parity x hand - shows interaction
-
 lawyeronly <- workingdata %>%
   dplyr::filter(condition == "controltrue")
 
@@ -268,7 +262,8 @@ CIerror_bar_MARC <- summarySE(lawyeronly, measurevar = "RTs", groupvars = c("par
 ggplot(data = CIerror_bar_MARC, aes(x = parity, color = hand, group = hand, y = RTs)) +
          stat_summary(fun.y = mean, geom = "point") +
          stat_summary(fun.y = mean, geom = "line") +
-  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1)
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ggtitle("MARC")
 
 ```
 
@@ -320,7 +315,8 @@ CIerror_bar_SNARC <- summarySE(lawyeronly, measurevar = "RTs", groupvars = c("ma
 ggplot(data = CIerror_bar_SNARC, aes(x = magnitude, color = hand, group = hand, y = RTs)) +
          stat_summary(fun.y = mean, geom = "point") +
          stat_summary(fun.y = mean, geom = "line") +
-  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1)
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ggtitle("SNARC")
 
 # regression plot
 
@@ -350,23 +346,33 @@ I was a litte bit confused about the regression here. On slide 4, it appears you
 ##  Control condition errors (lawyer only) - (replication of slide 5)
 
 ```{r}
-
 # Odd effect
 ggplot(lawyeronly %>%
-         dplyr::group_by(parity, accuracy) %>%
-         dplyr::summarise(acc_num = n()) %>%
-         dplyr::ungroup() %>%
          dplyr::group_by(parity) %>%
-         dplyr::mutate(perc = (acc_num / sum(acc_num)) * 100) %>%
-         dplyr::filter(accuracy == 0), aes(x = parity, y = acc_num)) +
+         dplyr::summarise(mean_acc = mean(accuracy)) %>%
+         dplyr::mutate(per_acc = mean_acc * 100), aes(x = parity, y = per_acc)) +
   geom_bar(stat = "identity") +
-  geom_text(aes(label = acc_num, vjust = -1)) +
-  ylim(0, 100) +
   ylab("Numbers of errors") +
   scale_x_discrete("Parity", labels = c("odd" = "Odd", "even" = "Even")) +
-  ggtitle("Number of errors per parity (Odd effect)") +
+  ggtitle("Odd effect - number of errors") +
   theme_gray() 
 
+model <- glm(accuracy ~ parity,
+             data = lawyeronly,
+             family = binomial)
+
+summary(model)
+```
+
+**Odd effect error analysis**
+
+To perform the error analysis, I utilise a logistic GLM. Accuracy is a dichotomous dependent variable and thus the ssumptions of a standard ANOVA will be violated. Hence a logistic GLM can be used to model an event that exists in a pass/fail, correct/error state, such as accuracy in this case.
+
+The logistic GLM indicates a significant main effect of parity via the object *parityodd*. The estimate output is negative, suggesting that the odd parity significantly reduces the probability of an accurate response. Plotting errors in a bar chart visualises this - odd parity has a lower accuracy percentage. 
+
+##  Control condition errors (lawyer only) - MARC effect error analysis (replication of slide 5)
+
+```{r}
 # MARC effect for errors/accuracy
 lawyeronly$hand = factor(lawyeronly$hand, levels = c("right", "left"))
 lawyeronly$parity = factor(lawyeronly$parity, levels = c("even", "odd"))
@@ -389,7 +395,19 @@ ggplot(data = MARC_errors, aes(x = parity, color = hand, group = hand, y = accur
   ylab("Response accuracy (%)") +
   xlab("Parity") +
   ggtitle("MARC effect - error analysis")
+```
 
+**Error analysis of the MARC effect**
+
+Once again, I implement a logistic GLM. First I set up my factors for hand and parity. I then  run a generalised linear model and specify the family as binomial. This allows me to compute the logistic regression.
+
+The results of the logistic regression demonstrate a significant interaction. By looking at the average accuracy percentage of each parity/hand pair, we can see what is driving the interaction. The output suggests that when compared to another pairing, the *handleft:parityodd* pairing significantly reduces the probability of an accurate response. Intuitively this seems to be the opposite of the traditional MARC effect (higher accuracy when parity and hand are congruant). Thus I implement a line plot to visualise the significant interaction.
+
+The line plot visualises this interaction. Accuracy is reduced for left + odd pairs and right + even pairs. This is the opposite of the traditional MARC effect. 
+
+##  Control condition errors (lawyer only) - SNARC effect error analysis (replication of slide 5)
+
+```{r}
 # SNARC effect for errors/accuracy
 lawyeronly$hand = factor(lawyeronly$hand, levels = c("right", "left"))
 lawyeronly$magnitude = factor(lawyeronly$magnitude, levels = c("small", "large"))
@@ -412,18 +430,7 @@ ggplot(data = SNARC_errors, aes(x = magnitude, color = hand, group = hand, y = a
   ylab("Response accuracy (%)") +
   xlab("Magnitude") +
   ggtitle("SNARC effect - error analysis")
-
 ```
-
-**Error analysis of the MARC effect**
-
-To perform the error analysis, I compute a multiple logistic regression. Because accuracy is a dichotomous dependent variable,the assumptions of a standard ANOVA will be violated. Hence a logistic regression can be used to model an event that exists in pass/fail, correct/error state, such as accuracy in this case.
-
-First I set up my factors for hand and parity. I then  run a generalised linear model and specify the family as binomial. This allows me to compute the logistic regression
-
-The results of the logistic regression demonstrate a significant interaction. By looking at the average accuracy percentage of each parity/hand pair, we can see what is driving the interaction. The output suggests that when compared to another pairing, the *handleft:parityodd* pairing significantly reduces the probability of an accurate response. Intuitively this seems to be the opposite of the traditional MARC effect (higher accuracy when parity and hand are congruant). Thus I implement a line plot to visualise the significant interaction.
-
-The line plot visualises this interaction. Accuracy is reduced for left + odd pairs and right + even pairs. This is the opposite of the traditional MARC effect. 
 
 **Error analysis of the SNARC effect**
 
@@ -435,8 +442,4 @@ The line plot visualises this interaction. Accuracy is reduced for left + small 
 
 **Overview**
 
-Hence the logistic regression analysis matches the analysis on slide 5, however I feel I have used more appropriate analyse techniques given the nature of the data. 
-
-**TO DO** 
-
-Compute t test for errors for odd and even numbers - is there such thing as a logistic regression?
+Logistic regression analysis matches the analysis on slide 5. Despite matching, I believe I have used a more appropriate analyse techniques given the nature of the data (dichotomous variables).
