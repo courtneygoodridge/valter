@@ -76,8 +76,8 @@ Above I am loading the packages that will be necessary for the analysis. Each pa
 
 # load control data
 # set working directory on personal laptop
-# setwd("C:/Users/Courtney/Documents/PhD/Valter")
-setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/")
+setwd("C:/Users/Courtney/Documents/PhD/Project/Experiment_code/valter")
+# setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/")
 
 dat <- loadWorkbook("Data_Lie_Numbers_Clean.xlsx")
 sheetNames <- sheets(dat)
@@ -273,20 +273,20 @@ This code chunk aims to replicate slide 3 of the summary analysis. The results o
 
 Line graph represents the mean reaction times for each hand (left and right) for various numbers in the control condition. I'm unsure what we expect here - whether the right hand is faster for numbers on the right side of the number line (5-9, and vice versa for left) or whether the left is faster for odd numbers and the right is faster for even numbers. Either way, the line graph matches the example.
 
-**95% CIs plot for odd effect**
+**Odd effect plot**
 
 The 95% CIs match the example. Mean RTs a different however the confidence intervals overalp. I perform a t-test to compare the 2 means (I'm unsure why in the example an f value is computed instead of  t value). Either way, it comes out as non-signifcant. I also prefer the mean points with error bars rather than with bar charts.
 
-**T-test for the odd effect**
+**MARC effect plot**
 
-TO DO
+Appears to the show a fairly strong parity x hand - following ANOVA comes out as significant 
 
 **2x2 factorial ANOVA**
 
-The results demonstrate no significant main effects but there is a significant interaction (large effect size). This appears to be standard MARC effect i.e. RTs are faster when the parity and hand you respond are congruent (even with right, odd with left). 
+The results demonstrate no significant main effects but there is a significant interaction (large effect size). This appears to be standard MARC effect i.e. RTs are faster when the parity and hand are congruent (even with right, odd with left). 
 
 **TO DO**
-COMPUTE T-TEST WITH CORRECT NUMBER OF DEGREES OF FREEDOM.
+COMPUTE T-TEST FOR ODD EFFECT WITH CORRECT NUMBER OF DEGREES OF FREEDOM.
 
 ## Control condition RTs (lawyer only) - SNARC effect (replication of slide 4)
 
