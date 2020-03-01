@@ -169,6 +169,8 @@ I have cleaned the data and set it up in a way I feel comfortable. The data mani
 ## Overview conditions - error per condition and mean RTs (replication of slide 2)
 
 ```{r}
+workingdata$condition <- factor(workingdata$condition, levels = c("controltrue", "exptrue", "explie"))
+
 # errors percentage 
 ggplot(workingdata %>%
   dplyr::group_by(condition, accuracy) %>%
@@ -238,10 +240,15 @@ OddEffect <- workingdata %>%
 
 CI_OddEffect <- summarySE(OddEffect, measurevar = "RTs", groupvars = c("parity"))
 
+
+ggplot(tgc2, aes(x=dose, y=len, fill=supp)) + 
+    geom_bar(position=position_dodge(), stat="identity") +
+    geom_errorbar(aes(ymin=len-ci, ymax=len+ci),
+                  width=.2,                    # Width of the error bars
+                  position=position_dodge(.9))
+
 ggplot(CI_OddEffect, aes(x = parity, y = RTs)) + 
-  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
-  geom_point() +
-  ylim(0.55, 0.60) +
+  geom_col() +
   ggtitle("Odd effect")
 
 ### NEED TO SORT THIS
