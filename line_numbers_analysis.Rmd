@@ -21,7 +21,15 @@ Participants shown just picture of the lawyer and a number. Participants have to
 
 ## Lie_SNARC
 
-In the lie condition, sometimes the picture is the lawyer and other times it is the cop. When it is the cop, they have to lie (i.e. repond with the opposite key, if the number is odd they had to respond as if it is  even). When the picture is a lawyer, they have to tell the truth (i.e. respond with the correct key). Here 2/3 trials are true (standard SNARC) whereas the 1/3 of trials participants had to lie (does this have any effect on the SNARC?)
+In the lie condition, sometimes the picture is the lawyer and other times it is the cop. When it is the cop, they have to lie (i.e. repond with the opposite key, if the number is odd they had to respond as if it is  even). When the picture is a lawyer, they have to tell the truth (i.e. respond with the correct key). Here 2/3 trials are lawyer (standard SNARC) whereas the 1/3 of trials participants had to lie (does this have any effect on the SNARC?)
+
+## What is being investigated?
+
+SNARC effect - Spatial-Numerical Association of Codes effect proposes faster reaction times to small/large numbers on the left/right hand side.
+
+MARC effect - Markedness of Response Codes effect proposes faster reaciton times for left/right hand side repsonses to odd/even numbers
+
+Odd effect - faster reaction times to even numbers, slower reaction times for odd numbers. 
 
 ## Understanding column names and data types from the raw data
 
@@ -257,7 +265,7 @@ lawyerttest <- reshape(lawyerttest, idvar = "participant", timevar = "parity", d
 t.test(lawyerttest$RTs.even, lawyerttest$RTs.odd, paired = TRUE)
 cohen.d(lawyerttest$RTs.even, lawyerttest$RTs.odd, paired = TRUE)
 
-### MARC effect - plots 95% CIs and corresponding2x2 ANOVA
+### MARC effect - plots 95% CIs and corresponding 2x2 ANOVA
 lawyeronly$parity <- factor(lawyeronly$parity, levels = c("odd", "even"))
 lawyeronly$hand <- factor(lawyeronly$hand, levels = c("left", "right"))
 
@@ -296,7 +304,7 @@ Appears to the show a fairly strong parity x hand interaction - RTs are faster w
 ## Control condition RTs (lawyer only) - SNARC effect (replication of slide 4)
 
 ```{r}
-# creating magnitude variable
+### creating magnitude variable
 small <- lawyeronly %>%
   dplyr::filter(numbers <= 4) %>%
   dplyr::mutate(magnitude = "small")
@@ -307,13 +315,9 @@ large <- lawyeronly %>%
 
 lawyeronly <- rbind(small, large)
 
-# SNARC effect ANOVA
-
-result_SNARC <- ezANOVA(lawyeronly, dv = RTs, wid = participant, within = .(magnitude, hand), type = 3, detailed = TRUE, return_aov = TRUE)
-result_SNARC
-
-eta_sq(result_SNARC$aov, partial = TRUE)
-
+### SNARC effect - plot with 95% CIs and 2x2 ANOVA
+lawyeronly$magnitude <- factor(lawyeronly$magnitude, levels = c("small", "large"))
+lawyeronly$hand <- factor(lawyeronly$hand, levels = c("left", "right"))
 
 CIerror_bar_SNARC <- summarySE(lawyeronly, measurevar = "RTs", groupvars = c("magnitude", "hand"))
 
@@ -322,6 +326,11 @@ ggplot(data = CIerror_bar_SNARC, aes(x = magnitude, color = hand, group = hand, 
          stat_summary(fun.y = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   ggtitle("SNARC")
+
+result_SNARC <- ezANOVA(lawyeronly, dv = RTs, wid = participant, within = .(magnitude, hand), type = 3, detailed = TRUE, return_aov = TRUE)
+result_SNARC
+
+eta_sq(result_SNARC$aov, partial = TRUE)
 
 # regression plot
 
