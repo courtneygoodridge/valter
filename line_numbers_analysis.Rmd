@@ -229,7 +229,7 @@ The above code computes the graphs for slide 2 in the presentation that you sent
 
 I have tried to recreate the original graphs as closely as possible in order for you to see that it is possible to make these graphs in R. I have titled them as you have in the presentation to make it easier to which graph relates to which. 
 
-## Control condition RTs (lawyer only) - MARC effect (replication of slide 3)
+## Control condition RTs (lawyer only) - Odd effect and MARC effect for RTs (replication of slide 3)
 
 ```{r}
 ### line graph - RTs over different numbers
@@ -301,7 +301,7 @@ Appears to the show a fairly strong parity x hand interaction - RTs are faster w
 
 2x2 ANOVA reveals significant interaction with large effect size.
 
-## Control condition RTs (lawyer only) - SNARC effect (replication of slide 4)
+## Control condition RTs (lawyer only) - SNARC effect for RTs (replication of slide 4)
 
 ```{r}
 ### creating magnitude variable
@@ -332,7 +332,7 @@ result_SNARC
 
 eta_sq(result_SNARC$aov, partial = TRUE)
 
-# regression plot
+### regression plot
 
 lawyeronly$numbers <- as.numeric(lawyeronly$numbers)
 
@@ -370,10 +370,10 @@ I use mixed effect in order to account for the repeated measures design. I speci
 ```{r}
 ### Odd effect
 ggplot(lawyeronly %>%
-         dplyr::group_by(parity) %>%
-         dplyr::summarise(mean_acc = mean(accuracy)) %>%
-         dplyr::mutate(per_acc = mean_acc * 100), aes(x = parity, y = per_acc)) +
-  geom_bar(stat = "identity") +
+         dplyr::group_by(parity, accuracy) %>%
+         dplyr::summarise(acc = n()) %>%
+         dplyr::filter(accuracy == 0), aes(x = parity, y = acc)) +
+  geom_col() +
   ylab("Numbers of errors") +
   scale_x_discrete("Parity", labels = c("odd" = "Odd", "even" = "Even")) +
   ggtitle("Odd effect - number of errors") +
@@ -384,9 +384,16 @@ oddeffect_model <- glmer(accuracy ~ parity + (1 | participant),
              family = binomial(link = "logit"))
 
 summary(oddeffect_model)
+
+exp(0.5125)
+
+(1 - exp(0.5125)) * 100
+
 ```
 
-The logistic GLM indicates a significant main effect of parity via the object *parityodd*. The estimate output is negative, suggesting that the odd parity significantly reduces the probability of an accurate response. Plotting errors in a bar chart visualises this - odd parity has a lower accuracy percentage.
+The effect of parity here refers to responding to even numbers and their accuracy when doing so. The logistic GLM indicates a significant effect of parity via the object *parityeven*. The estimate output is positive, suggesting that the even numbers significantly increase the probability of an accurate response. Plotting errors in a bar chart visualises this - even numbers have lower number of errors made. 
+
+To further investiagte this, we must look at the estimate. The estimate of logistic regression refers to the "log odds". To reveal the probability, I exponeniate the estimate. This indicates that the odds of a correct response increase by a factor of 1.66946 (66%) when numbers are even. Hence this statistically highlights the odd effect. 
 
 ##  Control condition errors (lawyer only) - MARC effect error analysis (replication of slide 5)
 
