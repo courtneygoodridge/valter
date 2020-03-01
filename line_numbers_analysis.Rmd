@@ -343,10 +343,18 @@ Significant main effect of magnitude (smaller number reacted to faster) however 
 
 I was a litte bit confused about the regression here. On slide 4, it appears you plot the number magnitudes against differences in reaction times for the SNARC effect? I have plotted the number magnitudes against average reaction times which is slightly different. Happy to have another go once I understand what the regression in slide 4 is trying to show.
 
-##  Control condition errors (lawyer only) - (replication of slide 5)
+##  Control condition errors (lawyer only) - Odd effect error analysis (replication of slide 5)
+
+**Why I do slightly different analysis to what was sent**
+
+For investigating errors in the contorl lawyer condition, I utilise a generalised linear mixed effects model - specificaly, a logistic mixed effect GLM.Accuracy is a dichotomous dependent variable and thus the assumptions of a standard ANOVA will be violated. Hence a logistic GLM can be used to model an event that exists in a pass/fail, correct/error state, such as accuracy in this case.
+
+For these models, I specify binomial as the distribution family because I am modelling a response with 2 outcomes - correct and wrong.
+
+I use mixed effect in order to account for the repeated measures design. I specify that each participant has their own intercept (a random effect) to model for each subject.
 
 ```{r}
-# Odd effect
+### Odd effect
 ggplot(lawyeronly %>%
          dplyr::group_by(parity) %>%
          dplyr::summarise(mean_acc = mean(accuracy)) %>%
@@ -357,18 +365,14 @@ ggplot(lawyeronly %>%
   ggtitle("Odd effect - number of errors") +
   theme_gray() 
 
-model <- glm(accuracy ~ parity,
+oddeffect_model <- glmer(accuracy ~ parity + (1 | participant),
              data = lawyeronly,
-             family = binomial)
+             family = binomial(link = "logit"))
 
-summary(model)
+summary(oddeffect_model)
 ```
 
-**Odd effect error analysis**
-
-To perform the error analysis, I utilise a logistic GLM. Accuracy is a dichotomous dependent variable and thus the ssumptions of a standard ANOVA will be violated. Hence a logistic GLM can be used to model an event that exists in a pass/fail, correct/error state, such as accuracy in this case.
-
-The logistic GLM indicates a significant main effect of parity via the object *parityodd*. The estimate output is negative, suggesting that the odd parity significantly reduces the probability of an accurate response. Plotting errors in a bar chart visualises this - odd parity has a lower accuracy percentage. 
+The logistic GLM indicates a significant main effect of parity via the object *parityodd*. The estimate output is negative, suggesting that the odd parity significantly reduces the probability of an accurate response. Plotting errors in a bar chart visualises this - odd parity has a lower accuracy percentage.
 
 ##  Control condition errors (lawyer only) - MARC effect error analysis (replication of slide 5)
 
@@ -377,10 +381,11 @@ The logistic GLM indicates a significant main effect of parity via the object *p
 lawyeronly$hand = factor(lawyeronly$hand, levels = c("right", "left"))
 lawyeronly$parity = factor(lawyeronly$parity, levels = c("even", "odd"))
 
-model <- glm(accuracy ~ hand * parity + participant,
+MARCeffect_model <- glmer(accuracy ~ hand * parity + (1 | participant),
              data = lawyeronly,
-             family=binomial)
-summary(model)
+             family = binomial(link = "logit"))
+
+summary(MARCeffect_model)
 
 lawyeronly %>% 
   dplyr::group_by(hand, parity) %>% 
@@ -399,9 +404,7 @@ ggplot(data = MARC_errors, aes(x = parity, color = hand, group = hand, y = accur
 
 **Error analysis of the MARC effect**
 
-Once again, I implement a logistic GLM. First I set up my factors for hand and parity. I then  run a generalised linear model and specify the family as binomial. This allows me to compute the logistic regression.
-
-The results of the logistic regression demonstrate a significant interaction. By looking at the average accuracy percentage of each parity/hand pair, we can see what is driving the interaction. The output suggests that when compared to another pairing, the *handleft:parityodd* pairing significantly reduces the probability of an accurate response. Intuitively this seems to be the opposite of the traditional MARC effect (higher accuracy when parity and hand are congruant). Thus I implement a line plot to visualise the significant interaction.
+The results of the logistic regression demonstrate a significant interaction. By looking at the average accuracy percentage of each parity/hand pair, we can see what is driving the interaction. The output suggests that the *handleft:parityodd* pairing significantly reduces the probability of an accurate response and thus drives the interaction. Intuitively this seems to be the opposite of the traditional MARC effect (higher accuracy when parity and hand are congruant). Thus I implement a line plot to visualise the significant interaction.
 
 The line plot visualises this interaction. Accuracy is reduced for left + odd pairs and right + even pairs. This is the opposite of the traditional MARC effect. 
 
@@ -412,10 +415,11 @@ The line plot visualises this interaction. Accuracy is reduced for left + odd pa
 lawyeronly$hand = factor(lawyeronly$hand, levels = c("right", "left"))
 lawyeronly$magnitude = factor(lawyeronly$magnitude, levels = c("small", "large"))
 
-model <- glm(accuracy ~ hand * magnitude + participant,
+SNARCeffect_model <- glmer(accuracy ~ hand * magnitude + (1 | participant),
              data = lawyeronly,
-             family = binomial)
-summary(model)
+             family = binomial(link = "logit"))
+
+summary(SNARCeffect_model)
 
 lawyeronly %>% 
   dplyr::group_by(hand, magnitude) %>% 
@@ -432,22 +436,34 @@ ggplot(data = SNARC_errors, aes(x = magnitude, color = hand, group = hand, y = a
   ggtitle("SNARC effect - error analysis")
 ```
 
-**Error analysis of the SNARC effect**
-
-Once again, I compute a logistic regression which results in a significant interaction. 
-
 The *handleft:magnitudelarge* pairing estimate suggests that when compared against another pairing, the probability of an accurate response increases. Intuitively this seems to be the opposite of the traditional SNARC effect (lower accuracy when magnitude and hand are incongruant). Thus I implement a line plot to visualise the significant interaction.
 
 The line plot visualises this interaction. Accuracy is reduced for left + small pairs and right + large pairs. This is the opposite of the traditional SNARC effect.
 
 **Overview**
 
-Logistic regression analysis matches the analysis on slide 5. Despite matching, I believe I have used a more appropriate analyse techniques given the nature of the data (dichotomous variables).
+RTs also show evidence of SNARC and MARC effect via significant ANOVAs
+
+Logistic regression analysis for the error effects matche the analysis on slide 5 - there is a significant odd effect (increased probability of errors with an odd number) however the MARC and SNARC effects are inverted. Despite matching results, I believe I have used a more appropriate analyse technique given the nature of the data (dichotomous variables).
+
+
+**Notes on correlated random effects**
+
+(1 | x) -> Random intercept for each value of x
+
+(1 + a | x) -> Random intercept for each value of x and random slope dependent on a. lme4 assumes that intercept and coeffecient correlated however this isn't always the case.
+
+(1 + a || x) -> uncorrelated random effects (investigate why this makes a difference)
 
 
 
 **TO DO **
 
-Write up summary of analyse so far
+lawyer only data:
 
-Analyse data for experimental condition (lawyer and cop)
+- plot logistic glmers 
+- investigate logistic glmers with more than one predictor (only necessary if I include random slope model)
+- sort out odd effect t-test for RTs (one subject has a missing observation, might be causing issues)
+
+
+- Analyse data for experimental condition (lawyer and cop)
