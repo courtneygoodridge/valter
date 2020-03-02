@@ -177,6 +177,8 @@ I have cleaned the data and set it up in a way I feel comfortable. The data mani
 
 ## Overview conditions - error per condition and mean RTs (replication of slide 2)
 
+The following code computes average errors and meanRTs for each condition.
+
 ```{r}
 workingdata$condition <- factor(workingdata$condition, levels = c("controltrue", "exptrue", "explie"))
 
@@ -228,6 +230,8 @@ The above code computes the graphs for slide 2 in the presentation that you sent
 - Mean reaction time per conditon (fasted RTs for the control condition i.e. no pictures, just standard SNARC)
 
 I have tried to recreate the original graphs as closely as possible in order for you to see that it is possible to make these graphs in R. I have titled them as you have in the presentation to make it easier to which graph relates to which. 
+
+The following code chunks analyse the lawyer only data i.e. the control condition when subjects just had to tell the truth.
 
 ## Control condition RTs (lawyer only) - Odd effect and MARC effect for RTs (replication of slide 3)
 
@@ -283,7 +287,7 @@ This code chunk aims to replicate slide 3 of the summary analysis.
 
 **Left-Right line graph**
 
-Line graph represents the mean reaction times for each hand (left and right) for various numbers in the control condition. I'm unsure what we expect here - whether the right hand is faster for numbers on the right side of the number line (5-9, and vice versa for left) or whether the left is faster for odd numbers and the right is faster for even numbers. Either way, the line graph matches the example.
+Line graph represents the mean reaction times for each hand responded with (left and right) for various numbers in the control condition. As we might expect, reaction times are faster for congruent hand-parrity pairs (left-odd, right-even).
 
 **Odd effect plot and t-test**
 
@@ -452,8 +456,67 @@ RTs also show evidence of SNARC and MARC effect via significant ANOVAs
 
 Logistic regression analysis for the error effects matche the analysis on slide 5 - there is a significant odd effect (increased probability of errors with an odd number) however the MARC and SNARC effects are inverted. Despite matching results, I believe I have used a more appropriate analyse technique given the nature of the data (dichotomous variables).
 
+Now that the lawyer only condition is analysed (both accuracy and RTs), the focus switches to experimental condition. We start with the when the lawyer is present in the "lie" experimental condition
+
+## Lawyer lie RTs (lawyer in experimental condition) - Odd effect and MARC effect for RTs (replication of slide 7)
+
+```{r}
+### line graph - RTs over different numbers
+ggplot(data = workingdata %>%
+         dplyr::filter(condition == "exptrue") %>%
+         dplyr::group_by(numbers, hand) %>%
+         dplyr::summarise(meanRT = mean(RTs)), aes(x = numbers, y = meanRT, col = hand)) +
+  geom_point() +
+  geom_line() +
+  scale_x_continuous("Numbers", breaks = seq(0, 9, 1)) +
+  scale_y_continuous("Mean RT (s)", breaks = seq(0, 0.82, 0.02)) +
+  ggtitle("RTs for left and right hands across numbers")
 
 
-**TO DO **
-- ensure logistic regression interpretation makes sense
-- Analyse data for experimental condition (lawyer and cop)
+lawyerlie <- workingdata %>%
+  dplyr::filter(condition == "exptrue")
+
+### Odd effect - plots with 95% CIs and corresponding t-test
+lawyerlie$parity <- factor(lawyerlie$parity, levels = c("odd", "even"))
+
+ggplot(data = summarySE(lawyerlie, measurevar = "RTs", groupvars = c("parity")), aes(x = parity, y = RTs)) + 
+  geom_col() +
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .2) +
+  coord_cartesian(ylim = c(0.62, 0.82)) +
+  ggtitle("Odd effect RT analysis")
+
+lawyerliettest <- lawyerlie %>%
+  dplyr::select(RTs, parity, participant)
+
+lawyerliettest <- reshape(lawyerliettest, idvar = "participant", timevar = "parity", direction = "wide")
+
+t.test(lawyerliettest$RTs.even, lawyerliettest$RTs.odd, paired = TRUE)
+cohen.d(lawyerliettest$RTs.even, lawyerliettest$RTs.odd, paired = TRUE)
+
+### MARC effect - plots 95% CIs and corresponding 2x2 ANOVA
+lawyerlie$parity <- factor(lawyerlie$parity, levels = c("odd", "even"))
+lawyerlie$hand <- factor(lawyerlie$hand, levels = c("left", "right"))
+
+ggplot(data = summarySE(lawyerlie, measurevar = "RTs", groupvars = c("parity", "hand")), aes(x = parity, color = hand, group = hand, y = RTs)) +
+         stat_summary(fun.y = mean, geom = "point") +
+         stat_summary(fun.y = mean, geom = "line") +
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ggtitle("MARC effect RT analysis")
+
+result_MARC <- ezANOVA(lawyerlie, dv = RTs, wid = participant, within = .(parity, hand), type = 3, detailed = TRUE, return_aov = TRUE)
+result_MARC
+
+eta_sq(result_MARC$aov, partial = TRUE)
+```
+
+**Left-right line graph**
+
+As per the lawyer control condition, we see faster RTs when parity and hand responded with are conrguent.
+
+**Odd effect**
+ 
+T-test reveales significant odd effect - faster reaction times for even numbers.
+ 
+**MARC effect**
+
+ANOVA aslo reveals significant interaction between parity and hand responded with alongside a large effect size indicating a MARC effect. 
