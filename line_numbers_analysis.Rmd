@@ -359,7 +359,7 @@ I was a litte bit confused about the regression here. On slide 4, it appears you
 
 **Why I do slightly different analysis to what was sent**
 
-For investigating errors in the contorl lawyer condition, I utilise a generalised linear mixed effects model - specificaly, a logistic mixed effect GLM.Accuracy is a dichotomous dependent variable and thus the assumptions of a standard ANOVA will be violated. Hence a logistic GLM can be used to model an event that exists in a pass/fail, correct/error state, such as accuracy in this case.
+For investigating errors in the contorl lawyer condition, I utilise a generalised linear mixed effects model - specificaly, a logistic mixed effect GLM. Accuracy is a dichotomous dependent variable and thus the assumptions of a standard ANOVA will be violated. Hence a logistic GLM can be used to model an event that exists in a pass/fail, correct/error state, such as accuracy in this case.
 
 For these models, I specify binomial as the distribution family because I am modelling a response with 2 outcomes - correct and wrong.
 
@@ -392,6 +392,8 @@ The effect of parity here refers to responding to even numbers and their accurac
 
 To further investiagte this, we must look at the estimate. If we exponentiate the logistic regression estimate, we can interepret it as an odds ratio i.e. the association between exposure (even or odd numbers) and the outcome (a correct or incorrect response). Doing this indicates that the odds of a correct response increase by a factor of 1.66946 (66%) when numbers are even i.e. the correct answer is 1.6 times more likely when the number is even versus when it is odd. This statistically highlights the odd effect. 
 
+Further explanation can be found here (https://stats.stackexchange.com/questions/57031/interpreting-interaction-terms-in-logit-regression-with-categorical-variables)
+
 ##  Control condition errors (lawyer only) - MARC effect error analysis (replication of slide 5)
 
 ```{r}
@@ -418,7 +420,7 @@ exp(-0.7641)
 
 **Error analysis of the MARC effect**
 
-Because we have a significant interaction, this is what our focus should be on. As mentioned for the odd effect, the exponentiated coefficient of the main effect gives your the odds ratio. However, the exponentiated coefficient of the interaction refers to theratio by which the odds ratio changes. 
+Because we have a significant interaction, this is what our focus should be on. As mentioned for the odd effect, the exponentiated coefficient of the main effect gives your the odds ratio. However, the exponentiated coefficient of the interaction refers to the ratio by which the odds ratio changes. 
 
 In the context of the MARC effect, we find a significant interaction between hand and parity via the *handright:parityeven* object. Once exponentiated, this indicates that when responding to an even number, the odds ratio for people responding with their right hand decreases by a factor of 0.4657529. Intuitively this seems to be the opposite of the traditional MARC effect as we would expect responding to even numbers to increase the odds ratio of an accurate response when responding with the right hand. It appears their is an inversed MARC effect. 
 
@@ -454,7 +456,7 @@ The line plot visualises this interaction. Accuracy is reduced for left + small 
 
 RTs also show evidence of SNARC and MARC effect via significant ANOVAs
 
-Logistic regression analysis for the error effects matche the analysis on slide 5 - there is a significant odd effect (increased probability of errors with an odd number) however the MARC and SNARC effects are inverted. Despite matching results, I believe I have used a more appropriate analyse technique given the nature of the data (dichotomous variables).
+Logistic regression analysis for the error effects matches the analysis on slide 5 - there is a significant odd effect (increased probability of errors with an odd number) however the MARC and SNARC effects are inverted. Despite matching results, I believe I have used a more appropriate analyse technique given the nature of the data (dichotomous variables).
 
 Now that the lawyer only condition is analysed (both accuracy and RTs), the focus switches to experimental condition. We start with the when the lawyer is present in the "lie" experimental condition
 
@@ -520,3 +522,49 @@ T-test reveales significant odd effect - faster reaction times for even numbers.
 **MARC effect**
 
 ANOVA aslo reveals significant interaction between parity and hand responded with alongside a large effect size indicating a MARC effect. 
+
+## Laywer lie RTs (SNARC effect) - replication of slide 8
+
+```{r}
+### creating magnitude variable
+small <- lawyerlie %>%
+  dplyr::filter(numbers <= 4) %>%
+  dplyr::mutate(magnitude = "small")
+
+large <- lawyerlie %>%
+  dplyr::filter(numbers > 4) %>%
+  dplyr::mutate(magnitude = "large")
+
+lawyerlie <- rbind(small, large)
+
+### SNARC effect - plot with 95% CIs and 2x2 ANOVA
+lawyerlie$magnitude <- factor(lawyerlie$magnitude, levels = c("small", "large"))
+lawyerlie$hand <- factor(lawyerlie$hand, levels = c("left", "right"))
+
+ggplot(data = summarySE(lawyerlie, measurevar = "RTs", groupvars = c("magnitude", "hand")), aes(x = magnitude, color = hand, group = hand, y = RTs)) +
+         stat_summary(fun.y = mean, geom = "point") +
+         stat_summary(fun.y = mean, geom = "line") +
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ggtitle("SNARC effect RT analysis")
+
+result_SNARC <- ezANOVA(lawyerlie, dv = RTs, wid = participant, within = .(magnitude, hand), type = 3, detailed = TRUE, return_aov = TRUE)
+result_SNARC
+
+eta_sq(result_SNARC$aov, partial = TRUE)
+
+### regression plot
+
+lawyerlie$numbers <- as.numeric(lawyerlie$numbers)
+
+ggplot(data = lawyerlie %>%
+         dplyr::group_by(numbers) %>%
+         dplyr::summarise(m = mean(RTs)), aes(x = numbers, y = m)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  scale_x_continuous(breaks = seq(1, 9, 1), limits = c(1, 9)) +
+  ggtitle("Linear model of number magnitude and RTs") +
+  xlab("Numbers (magnitude)") +
+  ylab("mean reaction time (s)")
+```
+
+
