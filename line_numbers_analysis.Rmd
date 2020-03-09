@@ -458,6 +458,8 @@ RTs also show evidence of SNARC and MARC effect via significant ANOVAs
 
 Logistic regression analysis for the error effects matches the analysis on slide 5 - there is a significant odd effect (increased probability of errors with an odd number) however the MARC and SNARC effects are inverted. Despite matching results, I believe I have used a more appropriate analyse technique given the nature of the data (dichotomous variables).
 
+Like Valter suggested, there could be trade off - decreases in reaction time lead to decreases in accuracy forthe observed effects.
+
 Now that the lawyer only condition is analysed (both accuracy and RTs), the focus switches to experimental condition. We start with the when the lawyer is present in the "lie" experimental condition
 
 ## Lawyer lie RTs (lawyer in experimental condition) - Odd effect and MARC effect for RTs (replication of slide 7)
@@ -632,3 +634,30 @@ exp(-0.5852 )
 We focus on the significant interaction between parity and hand via the *handright:parityeven* object. Once exponentiated, this indicates that when responding to an even number, the odds ratio for people responding with their right hand decreases by a factor of 0.5569945. This is once again the opposite of the traditional MARC effect. We would expect responding to even numbers to increase the odds ratio of an accurate response when responding with the right hand. It appears their is an inversed MARC effect.
 
 This is visualised via the line plot with 95% CIs.
+
+## Laywer lie RTs (lawyer only in experimental condition) SNARC effect for accuracy - replication of slide 8
+
+```{r}
+lawyerlie$hand = factor(lawyerlie$hand, levels = c("right", "left"))
+lawyerlie$magnitude = factor(lawyerlie$magnitude, levels = c("small", "large"))
+
+ggplot(data = summarySE(lawyerlie, measurevar = "accuracy", groupvars = c("magnitude", "hand")), aes(x = magnitude, color = hand, group = hand, y = accuracy)) +
+         stat_summary(fun.y = mean, geom = "point") +
+         stat_summary(fun.y = mean, geom = "line") +
+  geom_errorbar(aes(ymin = accuracy - ci, ymax = accuracy + ci), width = .1) +
+  ylab("Response accuracy (%)") +
+  xlab("Magnitude") +
+  ggtitle("SNARC effect - error analysis")
+
+SNARCeffect_model <- glmer(accuracy ~ hand * magnitude + (1 | participant),
+             data = lawyerlie,
+             family = binomial(link = "logit"))
+
+summary(SNARCeffect_model)
+
+exp(0.5480)
+```
+
+The *handleft:magnitudelarge* suggests that when responding with the left hand, the odd ratio for accuracy responses when responding to large numbers increases by a factor of 1.72979. Once again, ntuitively this seems to be the opposite of the traditional SNARC effect (odds ratio should decrease for large numbers  when responding with the left hand.
+
+The line plot visualises this interaction. Accuracy is reduced for left + small pairs and right + large pairs. This is the opposite of the traditional SNARC effect.
