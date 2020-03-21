@@ -97,6 +97,25 @@ for(i in 1:length(sheetNames)){
 
 Here I am loading the data. I set my working directory using the *setwd()* function, and then load in data from both sheets of the excel file.
 
+## Checking for na values
+
+```{r}
+count(is.na(Lie_SNARC))
+count(is.na(Control_SNARC))
+
+Lie_SNARC %>%
+  dplyr::filter(is.na(RTs))
+
+Control_SNARC %>%
+  dplyr::filter(is.na(RTs))
+```
+
+The first thing I do when I get a new dataset is check for na values. If these are not sorted, they can become an issue when analysing the data. I use the *count()* and *is.na()* function to tell me where and how many na values each dataset has. In the *Lie_SNARC* dataset, I have 43 trials with an na value within the RT column. For the *Control_SNARC* dataset, I have 1 trial with an value within the RT column.
+
+To further investigate, I filter both dataframes to look at the trials that have na values. For each na, the accurary is 0. I assume what has happened is te subject has ran out of time to respond or inputted an invalid resposne thus they do not get an RT and the accuracy is indicated as an error.
+
+For now, I will keep this na values in as they will be important for the error analysis. However for reaaction time analysis, we need to remember to drop these responses from the analysis otherwise we will throw an error. 
+
 ## Renaming conditions
 
 ```{r}
@@ -112,7 +131,6 @@ Lie_SNARC <- Lie_SNARC %>%
   arrange(participant) %>%
   dplyr::mutate(condition = case_when(condition == "t" ~ "exptrue",
                                       condition == "l" ~ "explie"))
-
 workingdata <- rbind(Control_SNARC, Lie_SNARC)
 ```
 
@@ -209,8 +227,8 @@ The following code chunks analyse the lawyer only data i.e. the control conditio
 ### line graph - RTs over different numbers
 ggplot(data = workingdata %>%
          dplyr::filter(condition == "controltrue") %>%
-         dplyr::group_by(numbers, hand) %>%
-         dplyr::summarise(meanRT = mean(RTs)), aes(x = numbers, y = meanRT, col = hand)) +
+         dplyr::group_by(numbers, response_hand) %>%
+         dplyr::summarise(meanRT = mean(RTs)), aes(x = numbers, y = meanRT, col = response_hand)) +
   geom_point() +
   geom_line() +
   scale_x_continuous("Numbers", breaks = seq(0, 9, 1)) +
@@ -239,15 +257,16 @@ cohen.d(lawyerttest$RTs.even, lawyerttest$RTs.odd, paired = TRUE)
 
 ### MARC effect - plots 95% CIs and corresponding 2x2 ANOVA
 lawyeronly$parity <- factor(lawyeronly$parity, levels = c("odd", "even"))
-lawyeronly$hand <- factor(lawyeronly$hand, levels = c("left", "right"))
+lawyeronly$response_hand <- factor(lawyeronly$response_hand, levels = c("left", "right"))
 
-ggplot(data = summarySE(lawyeronly, measurevar = "RTs", groupvars = c("parity", "hand")), aes(x = parity, color = hand, group = hand, y = RTs)) +
+ggplot(data = summarySE(lawyeronly, measurevar = "RTs", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = RTs)) +
          stat_summary(fun.y = mean, geom = "point") +
          stat_summary(fun.y = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   ggtitle("MARC effect RT analysis")
 
-result_MARC <- ezANOVA(lawyeronly, dv = RTs, wid = participant, within = .(parity, hand), type = 3, detailed = TRUE, return_aov = TRUE)
+result_MARC <- ezANOVA(lawyeronly %>%
+                         drop_na(), dv = RTs, wid = participant, within = .(parity, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
 result_MARC
 
 eta_sq(result_MARC$aov, partial = TRUE)
