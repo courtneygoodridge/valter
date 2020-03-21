@@ -85,8 +85,8 @@ Above I am loading the packages that will be necessary for the analysis. Each pa
 
 # load control data
 # set working directory on personal laptop
-setwd("C:/Users/Courtney/Documents/PhD/Project/Experiment_code/valter")
-# setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/")
+# setwd("C:/Users/Courtney/Documents/PhD/Project/Experiment_code/valter")
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/")
 
 dat <- loadWorkbook("Data_Lie_Numbers_Clean.xlsx")
 sheetNames <- sheets(dat)
@@ -101,7 +101,7 @@ Here I am loading the data. I set my working directory using the *setwd()* funct
 
 ```{r}
 # cleaning control condition
-controldata <- Control_SNARC %>%
+Control_SNARC <- Control_SNARC %>%
   dplyr::select(numbers, condition, key, accuracy, RTs, participant) %>%
   arrange(participant) %>%
   mutate(condition = "controltrue")
@@ -109,71 +109,41 @@ controldata <- Control_SNARC %>%
 # cleaning experimental conditon
 Lie_SNARC <- Lie_SNARC %>%
   dplyr::select(numbers, condition, key, accuracy, RTs, participant) %>%
-  arrange(participant)
+  arrange(participant) %>%
+  dplyr::mutate(condition = case_when(condition == "t" ~ "exptrue",
+                                      condition == "l" ~ "explie"))
 
-exptrue <- Lie_SNARC %>%
-  dplyr::filter(condition == "t") %>%
-  mutate(condition = "exptrue")
-
-explie <- Lie_SNARC %>%
-  dplyr::filter(condition == "l") %>%
-  mutate(condition = "explie")
-
-workingdata <- rbind(controldata, exptrue, explie)
-
+workingdata <- rbind(Control_SNARC, Lie_SNARC)
 ```
 
-**Control**
+The piece of code above is mainly for my own benefit - I am just renaming conditions. From the *Control_SNARC* dataframe, I am selecting the important columns (numbers, condition, accuracy, RTs and participant), I then arrange them by participant, and then rename name the condition *"controltrue"*. This indicates it was a control condition and subjects had to tell the truth i.e. the basic SNARC effect.
 
-The piece of code above is mainly for my own benefit - I am just renaming conditions. From the *Control_SNARC* dataframe, I am selecting the important columns (numbers, condition, accuracy, RTs and participant), I then arrange them by participant, and then rename name the condition "controltrue". This indicates it was a control condition and subjects had to tell the truth. I name this new dataframe "controldata".
+The *Lie_SNARC* dataframe contains trials from the experimental block - either where subjects still had to tell the truth, or if they had to lie. I found the *t* and *l* names confusing, so I rename them exptrue and explie.
 
-*Experimental*
-
-I select the relevant columns in the Lie_SNARC condition and arrange by participant. I then create two dataframes: one containing trials where the subject was telling the truth (I rename this exptrue) and one containing trials where the subject was telling a lie (I rename this explie).
-
-*Overview*
-
-With these new condition names, I combine the three dataframes into one overall dataframe called workingdata. I will be using this for the analysis and visualisation.
+I then combine both dataframes into one overall dataframe called *workingdata*.
 
 ## Creating handedness column
 
 ```{r}
-# creating handedness variable
-left <- workingdata %>%
-  dplyr::filter(key == "a") %>%
-  mutate(hand = "left")
-
-right <- workingdata %>%
-  dplyr::filter(key == "g") %>%
-  mutate(hand = "right")
-
-workingdata <- rbind(left, right)
+workingdata <- workingdata %>%
+  dplyr::mutate(response_hand = case_when(key == "a" ~ "left",
+                                          key == "g" ~ "right"))
 ```
 
-Again, this is for my own benefit. I am creating a column to replace "key". The new column is called hand and denotes the left or right hand to make it easier to understand the dataframe. I filter each key type into it's own dataframe, create a new "hand" variable and then recombine the dataframe.
+Again, this is for my own benefit. I am creating a column to replace "key" as I found it confusing. The new column is called hand and denotes the left or right hand to make it easier to understand the dataframe.
+
+The *case_when* function allows me to create a new column of data dependiing on the value of the *key*.
 
 ## Creating parity column
 
 ```{r}
-# creating parity variable
-even <- workingdata %>%
-  dplyr::filter(numbers %% 2 == 0) %>%
-  mutate(parity = "even")
-
-odd <- workingdata %>%
-  dplyr::filter(numbers %% 2 == 1) %>%
-  mutate(parity = "odd")
-
-workingdata <- rbind(even, odd)
-
-rm(controldata, explie, exptrue, left, right, even, odd)
+workingdata <- workingdata %>%
+  dplyr::mutate(parity = ifelse(numbers %% 2 == 0, "even", "odd"))
 ```
 
-Fianlly, I filter the data into odd and even number dataframes. I then create a a parity column indicating whether the number is odd or even. I recombine the dataframe and remove the other dataframes from the global environment using the *rm()* function. We are now ready to visualise some data. 
+Finally, I create a *parity* column. The *ifelse()* function evaluates the first argument. When the value in the numbers column is divided by 2, if it equals 0 create a new column and insert *even*. For an other value after dividing, it much be odd thus insert *odd*.
 
-## Overview so far
-
-I have cleaned the data and set it up in a way I feel comfortable. The data manipulation so is really personal preference, but I will be using the variables/variables names for the rest of the analysis.
+I have cleaned the data and set it up in a way I feel comfortable. The above data manipulation is personal preference, but I will be using the variables created above for the rest of the analysis.
 
 ## Overview conditions - error per condition and mean RTs (replication of slide 2)
 
