@@ -187,7 +187,8 @@ ggplot(workingdata %>%
   theme_gray() 
 
 # errors in each condition
-ggplot(dplyr::filter(workingdata, accuracy == 0) %>%
+ggplot(workingdata %>%
+         dplyr::filter(accuracy == 0) %>%
          dplyr::group_by(condition) %>%
          dplyr::summarise(errors = n()), aes(x = condition, y = errors)) +
   geom_bar(stat = "identity") +
@@ -199,7 +200,9 @@ ggplot(dplyr::filter(workingdata, accuracy == 0) %>%
   theme_gray() 
 
 # mean RTS in each condition for correct repsonses
-ggplot(dplyr::filter(workingdata, accuracy == 1) %>%
+ggplot(workingdata %>%
+         drop_na() %>%
+         dplyr::filter(accuracy == 1) %>%
          dplyr::group_by(condition) %>%
          dplyr::summarise(meanRT = mean(RTs)), aes(x = condition, y = meanRT)) +
   geom_bar(stat = "identity") +
@@ -225,7 +228,8 @@ The following code chunks analyse the lawyer only data i.e. the control conditio
 
 ```{r}
 ### line graph - RTs over different numbers
-ggplot(data = workingdata %>%
+ggplot(workingdata %>%
+         drop_na() %>%
          dplyr::filter(condition == "controltrue") %>%
          dplyr::group_by(numbers, response_hand) %>%
          dplyr::summarise(meanRT = mean(RTs)), aes(x = numbers, y = meanRT, col = response_hand)) +
@@ -236,12 +240,16 @@ ggplot(data = workingdata %>%
   ggtitle("RTs for left and right hands across numbers")
 
 lawyeronly <- workingdata %>%
+  drop_na() %>%
   dplyr::filter(condition == "controltrue")
 
 ### Odd effect - plots with 95% CIs and corresponding t-test
 lawyeronly$parity <- factor(lawyeronly$parity, levels = c("odd", "even"))
 
-ggplot(data = summarySE(lawyeronly, measurevar = "RTs", groupvars = c("parity")), aes(x = parity, y = RTs)) + 
+ggplot(workingdata %>%
+         drop_na() %>%
+         dplyr::filter(condition == "controltrue") %>%
+         summarySE(measurevar = "RTs", groupvars = c("parity")), aes(x = parity, y = RTs)) + 
   geom_col() +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .2) +
   coord_cartesian(ylim = c(0.55, 0.60)) +
