@@ -199,7 +199,7 @@ ggplot(workingdata %>%
          dplyr::summarise(errors = n()), aes(x = condition, y = errors)) +
   geom_bar(stat = "identity") +
   geom_text(aes(label = errors, vjust = -1)) +
-  ylim(0, 900) +
+  ylim(0, 1000) +
   ylab("Numbers of errors") +
   scale_x_discrete("Condition", labels = c("controltrue" = "Control", "explie" = "Police", "exptrue" = "Lawyer")) +
     ggtitle("Errors") +
@@ -223,12 +223,8 @@ ggplot(workingdata %>%
 The above code computes the graphs for slide 2 in the presentation that you sent to me (and that I sent back to you). The graphs visualise:
 
 - Number of errors per condition (more errors in the condition where the police officer was present)
-- Percentage of errors per condition (higher percentageof errors where the police officer was present)
-- Mean reaction time per conditon (fasted RTs for the control condition i.e. no pictures, just standard SNARC)
-
-I have tried to recreate the original graphs as closely as possible in order for you to see that it is possible to make these graphs in R. I have titled them as you have in the presentation to make it easier to which graph relates to which. 
-
-The following code chunks analyse the lawyer only data i.e. the control condition when subjects just had to tell the truth.
+- Percentage of errors per condition (higher percentage of errors where the police officer was present)
+- Mean reaction time per conditon (faster RTs for the control condition i.e. no pictures, just standard SNARC)
 
 ## Control condition RTs (lawyer only) - Odd effect and MARC effect for RTs (replication of slide 3)
 
@@ -281,7 +277,8 @@ ggplot(workingdata %>%
   ggtitle("MARC effect RT analysis")
 
 result_MARC <- ezANOVA(workingdata %>%
-                         drop_na(), dv = RTs, wid = participant, within = .(parity, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
+                         drop_na() %>%
+                         dplyr::filter(condition == "controltrue"), dv = RTs, wid = participant, within = .(parity, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
 result_MARC
 
 eta_sq(result_MARC$aov, partial = TRUE)
@@ -291,73 +288,55 @@ This code chunk aims to replicate slide 3 of the summary analysis.
 
 **Left-Right line graph**
 
-Line graph represents the mean reaction times for each hand responded with (left and right) for various numbers in the control condition. As we might expect, reaction times are faster for congruent hand-parrity pairs (left-odd, right-even).
+Line graph represents the mean reaction times for each hand responded with (left and right) for various numbers in the control condition. As we might expect, reaction times are faster for congruent hand-parity pairs (left-odd, right-even).
 
 **Odd effect plot and t-test**
 
-The 95% CIs match the example. Mean RTs are slightly different - unsure why when the number of participants is the same... either way, the pattern of results is the same.
+The 95% CIs match the example. Mean RTs are slightly different by looking at the degrees of freedom, the number of participants are not the same (perhaps I have a more updated dataset?). Either way, the pattern of results is the same.
 
-I then perform a t-test to compare the 2 means (I'm unsure why in the example an f value is computed instead of  t value). Either way, it comes out as non-signifcant [t(37) = 1.81, p = 0.07].
+The corresponding t-test comparing the 2 means comes out as non-signifcant [t(37) = 0.23, p = 0.81].
 
 **MARC effect plot and 2X2 ANOVA**
 
 Appears to the show a fairly strong parity x hand interaction - RTs are faster when the hand repsonded with and the pairty are conrguent (left-odd, right-even).
 
-2x2 ANOVA reveals significant interaction with large effect size.
+2x2 ANOVA reveals significant interaction with large effect size [f(1, 37) = 4.61, p < 0.001, eta^2 = 0.11].
 
 ## Control condition RTs (lawyer only) - SNARC effect for RTs (replication of slide 4)
 
 ```{r}
 ### creating magnitude variable
-small <- lawyeronly %>%
-  dplyr::filter(numbers <= 4) %>%
-  dplyr::mutate(magnitude = "small")
-
-large <- lawyeronly %>%
-  dplyr::filter(numbers > 4) %>%
-  dplyr::mutate(magnitude = "large")
-
-lawyeronly <- rbind(small, large)
-
+workingdata <- workingdata %>%
+  dplyr::mutate(magnitude = case_when(numbers <= 4 ~ "small",
+                                      numbers > 4 ~ "large"))
 ### SNARC effect - plot with 95% CIs and 2x2 ANOVA
-lawyeronly$magnitude <- factor(lawyeronly$magnitude, levels = c("small", "large"))
-lawyeronly$hand <- factor(lawyeronly$hand, levels = c("left", "right"))
+workingdata$magnitude <- factor(workingdata$magnitude, levels = c("small", "large"))
+workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 
-ggplot(data = summarySE(lawyeronly, measurevar = "RTs", groupvars = c("magnitude", "hand")), aes(x = magnitude, color = hand, group = hand, y = RTs)) +
+ggplot(workingdata %>%
+         drop_na() %>%
+         dplyr::filter(condition == "controltrue") %>%
+         summarySE(measurevar = "RTs", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = RTs)) +
          stat_summary(fun.y = mean, geom = "point") +
          stat_summary(fun.y = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   ggtitle("SNARC effect RT analysis")
 
-result_SNARC <- ezANOVA(lawyeronly, dv = RTs, wid = participant, within = .(magnitude, hand), type = 3, detailed = TRUE, return_aov = TRUE)
+result_SNARC <- ezANOVA(workingdata %>%
+                          drop_na() %>%
+                          dplyr::filter(condition == "controltrue"), dv = RTs, wid = participant, within = .(magnitude, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
 result_SNARC
 
 eta_sq(result_SNARC$aov, partial = TRUE)
-
-### regression plot
-
-lawyeronly$numbers <- as.numeric(lawyeronly$numbers)
-
-ggplot(data = lawyeronly %>%
-         dplyr::group_by(numbers) %>%
-         dplyr::summarise(m = mean(RTs)), aes(x = numbers, y = m)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  scale_x_continuous(breaks = seq(1, 9, 1), limits = c(1, 9)) +
-  ggtitle("Linear model of number magnitude and RTs") +
-  xlab("Numbers (magnitude)") +
-  ylab("mean reaction time (s)")
 ```
 
 Firstly I make dataframes *small* and *large* in order to compute a new variable called magnitude. This will be used (alongside hand) to analyse the SNARC effect
 
 **2x2 factorial ANOVA**
 
-Significant main effect of magnitude (smaller number reacted to faster) however more importantly, a significant interatcion with large effect size. This indicates a classic SNARC in the only lawyer control condition (i.e. when responding to larger numbers with right hard, RTs are faster. When responding to small numbers with left hand, RTs are faster). 
+Significant main effect of magnitude (smaller number reacted to faster) however more importantly, a significant interaction with large effect size [f(1, 37) = 4.64, p < 0.001, eta^2 = 0.11].
 
-**Regression (linear model)**
-
-I was a litte bit confused about the regression here. On slide 4, it appears you plot the number magnitudes against differences in reaction times for the SNARC effect? I have plotted the number magnitudes against average reaction times which is slightly different. Happy to have another go once I understand what the regression in slide 4 is trying to show.
+This indicates a classic SNARC in the only lawyer control condition (i.e. when responding to larger numbers with right hard, RTs are faster. When responding to small numbers with left hand, RTs are faster). 
 
 ##  Control condition errors (lawyer only) - Odd effect error analysis (replication of slide 5)
 
