@@ -37,6 +37,12 @@ Key: a = left key, g = right key
 
 Accuracy: 1 = correct, 0 = incorrect
 
+## A brief description of the packages I will be using
+
+To manipulate dataframes for analysis and data visualisations, I will be using a package called *dplyr*. This package provides functions such as *dplyr::filter()* (to filter by specific values), *dplyr::group_by()* (to group by a specific variable before performing a calculation) and others. This package also has something called a pipe (%>%). This symbol essential means "and then do this" which allows you to manipulate the dataframe before using it.
+
+It works in concordance with other packages (ggplot2) so you can manipulate dataframes to visualise data, without having to create lots of new dataframes from scratch. 
+
 ## Loading packages
 
 ```{r echo = TRUE,  message = 'hide', warning = 'hide', results = 'hide'}
@@ -239,12 +245,8 @@ ggplot(workingdata %>%
   scale_y_continuous("Mean RT (s)", breaks = seq(0, 0.62, 0.02)) +
   ggtitle("RTs for left and right hands across numbers")
 
-lawyeronly <- workingdata %>%
-  drop_na() %>%
-  dplyr::filter(condition == "controltrue")
-
 ### Odd effect - plots with 95% CIs and corresponding t-test
-lawyeronly$parity <- factor(lawyeronly$parity, levels = c("odd", "even"))
+workingdata$parity <- factor(workingdata$parity, levels = c("odd", "even"))
 
 ggplot(workingdata %>%
          drop_na() %>%
@@ -255,25 +257,30 @@ ggplot(workingdata %>%
   coord_cartesian(ylim = c(0.55, 0.60)) +
   ggtitle("Odd effect RT analysis")
 
-lawyerttest <- lawyeronly %>%
+control_ttest_df <- workingdata %>%
+  drop_na() %>%
+  dplyr::filter(condition == "controltrue") %>%
   dplyr::select(RTs, parity, participant)
 
-lawyerttest <- reshape(lawyerttest, idvar = "participant", timevar = "parity", direction = "wide")
+control_ttest_df <- reshape(control_ttest_df, idvar = "participant", timevar = "parity", direction = "wide")
 
-t.test(lawyerttest$RTs.even, lawyerttest$RTs.odd, paired = TRUE)
-cohen.d(lawyerttest$RTs.even, lawyerttest$RTs.odd, paired = TRUE)
+t.test(control_ttest_df$RTs.even, control_ttest_df$RTs.odd, paired = TRUE)
+cohen.d(control_ttest_df$RTs.even, control_ttest_df$RTs.odd, paired = TRUE)
 
 ### MARC effect - plots 95% CIs and corresponding 2x2 ANOVA
-lawyeronly$parity <- factor(lawyeronly$parity, levels = c("odd", "even"))
-lawyeronly$response_hand <- factor(lawyeronly$response_hand, levels = c("left", "right"))
+workingdata$parity <- factor(workingdata$parity, levels = c("odd", "even"))
+workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 
-ggplot(data = summarySE(lawyeronly, measurevar = "RTs", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = RTs)) +
+ggplot(workingdata %>%
+         drop_na() %>%
+         dplyr::filter(condition == "controltrue") %>%
+         summarySE(measurevar = "RTs", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = RTs)) +
          stat_summary(fun.y = mean, geom = "point") +
          stat_summary(fun.y = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   ggtitle("MARC effect RT analysis")
 
-result_MARC <- ezANOVA(lawyeronly %>%
+result_MARC <- ezANOVA(workingdata %>%
                          drop_na(), dv = RTs, wid = participant, within = .(parity, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
 result_MARC
 
