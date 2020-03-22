@@ -120,7 +120,9 @@ The first thing I do when I get a new dataset is check for na values. If these a
 
 To further investigate, I filter both dataframes to look at the trials that have na values. For each na, the accurary is 0. I assume what has happened is te subject has ran out of time to respond or inputted an invalid resposne thus they do not get an RT and the accuracy is indicated as an error.
 
-For now, I will keep this na values in as they will be important for the error analysis. However for reaaction time analysis, we need to remember to drop these responses from the analysis otherwise we will throw an error. 
+**Dealing with NA values**
+
+When focusing on just error analysis, I shall keep the na values as they provide interesting information (i.e. conditions where subjects did no provide a response). For the MARC and SNARC analysis, I will have to remove the na values as there is no *response_hand* if no response is recorded.
 
 ## Renaming conditions
 
@@ -392,9 +394,9 @@ exp(0.5231)
 (1 - exp(0.5231)) * 100
 ```
 
-The effect of parity here refers to responding to even numbers and their accuracy when doing so. The logistic GLM indicates a significant effect of parity via the object *parityeven*. The estimate output is positive, suggesting that the even numbers significantly increase the probability of an accurate response. Plotting errors in a bar chart visualises this - even numbers have lower number of errors made. 
+The effect of parity here refers to response accuracy when responding to even numbers. The logistic GLM indicates a significant effect of parity via the object *parityeven*. The estimate output is positive, suggesting that the even numbers significantly increase the probability of an accurate response. Plotting errors in a bar chart visualises this - even numbers have lower number of errors made. 
 
-To further investiagte this, we must look at the estimate. If we exponentiate the logistic regression estimate, we can interepret it as an odds ratio i.e. the association between exposure (even or odd numbers) and the outcome (a correct or incorrect response). Doing this indicates that the odds of a correct response increase by a factor of 1.66946 (66%) when numbers are even i.e. the correct answer is 1.6 times more likely when the number is even versus when it is odd. This statistically highlights the odd effect. 
+To further investiagte this, we must look at the estimate. If we exponentiate the logistic regression estimate, we can interepret it as an odds ratio i.e. the association between exposure (even or odd numbers) and the outcome (a correct or incorrect response). Doing this indicates that the odds ratio of a correct response increase by a factor of 1.68725 (69%) when numbers are even i.e. the correct answer is 1.6 times more likely when the number is even versus when it is odd. This statistically highlights the odd effect. 
 
 Further explanation can be found here (https://stats.stackexchange.com/questions/57031/interpreting-interaction-terms-in-logit-regression-with-categorical-variables)
 
@@ -402,10 +404,13 @@ Further explanation can be found here (https://stats.stackexchange.com/questions
 
 ```{r}
 ### MARC effect for errors/accuracy
-lawyeronly$hand = factor(lawyeronly$hand, levels = c("left", "right"))
-lawyeronly$parity = factor(lawyeronly$parity, levels = c("odd", "even"))
+workingdata$response_hand = factor(workingdata$response_hand, levels = c("left", "right"))
+workingdata$parity = factor(workingdata$parity, levels = c("odd", "even"))
 
-ggplot(data = summarySE(lawyeronly, measurevar = "accuracy", groupvars = c("parity", "hand")), aes(x = parity, color = hand, group = hand, y = accuracy)) +
+ggplot(workingdata %>%
+         drop_na() %>%
+         dplyr::filter(condition == "controltrue") %>%
+         summarySE(measurevar = "accuracy", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = accuracy)) +
          stat_summary(fun.y = mean, geom = "point") +
          stat_summary(fun.y = mean, geom = "line") +
   geom_errorbar(aes(ymin = accuracy - ci, ymax = accuracy + ci), width = .1) +
@@ -413,20 +418,24 @@ ggplot(data = summarySE(lawyeronly, measurevar = "accuracy", groupvars = c("pari
   xlab("Parity") +
   ggtitle("MARC effect - error analysis")
 
-MARCeffect_model <- glmer(accuracy ~ hand * parity + (1 | participant),
-             data = lawyeronly,
+MARCeffect_model <- glmer(accuracy ~ response_hand * parity + (1 | participant),
+             data = workingdata %>%
+               drop_na() %>%
+               dplyr::filter(condition == "controltrue"),
              family = binomial(link = "logit"))
 
 summary(MARCeffect_model)
 
 exp(-0.7641)
+
+(1 - exp(-0.7641)) * 100
 ```
 
 **Error analysis of the MARC effect**
 
-Because we have a significant interaction, this is what our focus should be on. As mentioned for the odd effect, the exponentiated coefficient of the main effect gives your the odds ratio. However, the exponentiated coefficient of the interaction refers to the ratio by which the odds ratio changes. 
+Because we have a significant interaction, this is what our focus should be on. As mentioned for the odd effect, the exponentiated coefficient of the main effect gives your the odds ratio. The exponentiated coefficient of the interaction refers to the ratio by which the odds ratio changes. 
 
-In the context of the MARC effect, we find a significant interaction between hand and parity via the *handright:parityeven* object. Once exponentiated, this indicates that when responding to an even number, the odds ratio for people responding with their right hand decreases by a factor of 0.4657529. Intuitively this seems to be the opposite of the traditional MARC effect as we would expect responding to even numbers to increase the odds ratio of an accurate response when responding with the right hand. It appears their is an inversed MARC effect. 
+In the context of the MARC effect, we find a significant interaction term between hand and parity via the *response_handright:parityeven* object. Once exponentiated, this indicates that when responding to an even number, the odds ratio for people responding with their right hand decreases by a factor of 0.4657529 (53%). Intuitively this seems to be the opposite of the traditional MARC effect as we would expect responding to even numbers to increase the odds ratio of an accurate response when responding with the right hand. It appears their is an inversed MARC effect. 
 
 Implementing a line plot visualises this interaction. Accuracy is reduced for left + odd pairs and right + even pairs. This is the opposite of the traditional MARC effect. 
 
@@ -434,10 +443,13 @@ Implementing a line plot visualises this interaction. Accuracy is reduced for le
 
 ```{r}
 # SNARC effect for errors/accuracy
-lawyeronly$hand = factor(lawyeronly$hand, levels = c("right", "left"))
-lawyeronly$magnitude = factor(lawyeronly$magnitude, levels = c("small", "large"))
+workingdata$response_hand = factor(workingdata$resposne_hand, levels = c("right", "left"))
+workingdata$magnitude = factor(workingdata$magnitude, levels = c("small", "large"))
 
-ggplot(data = summarySE(lawyeronly, measurevar = "accuracy", groupvars = c("magnitude", "hand")), aes(x = magnitude, color = hand, group = hand, y = accuracy)) +
+ggplot(workingdata %>%
+         drop_na() %>%
+         dplyr::filter(condition == "controltrue") %>%
+         summarySE(measurevar = "accuracy", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = accuracy)) +
          stat_summary(fun.y = mean, geom = "point") +
          stat_summary(fun.y = mean, geom = "line") +
   geom_errorbar(aes(ymin = accuracy - ci, ymax = accuracy + ci), width = .1) +
@@ -445,14 +457,20 @@ ggplot(data = summarySE(lawyeronly, measurevar = "accuracy", groupvars = c("magn
   xlab("Magnitude") +
   ggtitle("SNARC effect - error analysis")
 
-SNARCeffect_model <- glmer(accuracy ~ hand * magnitude + (1 | participant),
-             data = lawyeronly,
+SNARCeffect_model <- glmer(accuracy ~ response_hand * magnitude + (1 | participant),
+             data = workingdata %>%
+               drop_na() %>%
+               dplyr::filter(condition == "controltrue"),
              family = binomial(link = "logit"))
 
 summary(SNARCeffect_model)
+
+exp(-0.9413)
+
+(1 - exp(-0.9413)) * 100
 ```
 
-The *handleft:magnitudelarge* pairing estimate suggests that when compared against another pairing, the probability of an accurate response increases. Intuitively this seems to be the opposite of the traditional SNARC effect (lower accuracy when magnitude and hand are incongruant). Thus I implement a line plot to visualise the significant interaction.
+The significant interaction term of *response_handright:magnitudelarge* indicates that when responding to a large number, the odds ratio for people responding with their right hand decreases by a factor of 0.39 (60%). Intuitively this seems to be the opposite of the traditional SNARC effect (higher accuracy when magnitude and response hand are congruant). Thus I implement a line plot to visualise the significant interaction.
 
 The line plot visualises this interaction. Accuracy is reduced for left + small pairs and right + large pairs. This is the opposite of the traditional SNARC effect.
 
@@ -460,7 +478,7 @@ The line plot visualises this interaction. Accuracy is reduced for left + small 
 
 RTs also show evidence of SNARC and MARC effect via significant ANOVAs
 
-Logistic regression analysis for the error effects matches the analysis on slide 5 - there is a significant odd effect (increased probability of errors with an odd number) however the MARC and SNARC effects are inverted. Despite matching results, I believe I have used a more appropriate analyse technique given the nature of the data (dichotomous variables).
+Logistic regression analysis for the error effects matches the analysis on slide 5 - there is a significant odd effect (increased baseline odds of errors with an odd number) however the MARC and SNARC effects are inverted. Despite overall matching results, I believe I have used a more appropriate analyse technique given the nature of the data (dichotomous variables).
 
 Like Valter suggested, there could be trade off - decreases in reaction time lead to decreases in accuracy forthe observed effects.
 
