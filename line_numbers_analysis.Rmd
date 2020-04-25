@@ -47,38 +47,19 @@ It works in concordance with other packages (ggplot2) so you can manipulate data
 
 ```{r echo = TRUE,  message = 'hide', warning = 'hide', results = 'hide'}
 # rm(list = ls())
-# data visualisation
 library(ggplot2) # for plotting
-library(scales) # Scale Functions for Visualization
-library(gplots) # for plotting
-
-# data manipulation
 library(dplyr) # data manipulation
 library(tidyr) # data manipulation
 library(readxl) # reading excel files 
 library(openxlsx) # loads data sets from multiple sheets
-
-# frequentist statistics
-library(ez) # allows me to perform the ANOVA
 library(car) # inferential stats
 library(MASS) # inferential stats
 library(EnvStats) # inferential stats
 library(Rmisc) # confidence intervals 
 library(sjstats) # for calculating effect sizes for ANOVA
 library(effsize) # cohen's D function
-
-# frequetist modelling/multi-level modelling
 library(lme4) # for linear mixed effects modelling
-library(nlme) # non linear mixed effects modelling
-library(fitdistrplus) # fitting distribution modelling 
 library(lmtest) # testing linear regression models
-library(caret) # classification and regression training
-library(merTools) # multi leveling modelling
-
-# bayesian modelling and comparison
-library(rstanarm) # for bayesian modelling
-library(bayesplot) # for bayesian modelling
-library(loo) # comparison of bayesian modelling
 ```
 
 Above I am loading the packages that will be necessary for the analysis. Each package has specific utilities that will be needed to perform analysis. It is important to load them at the start of your script otherwise you will encounter errors.
@@ -86,12 +67,8 @@ Above I am loading the packages that will be necessary for the analysis. Each pa
 ## Loading data
 
 ```{r echo = TRUE, message = 'hide', warning = 'hide', results = 'hide'} 
-# rm(list = ls()) clears environment
 # dput(head(df,n)) provides example of data structure for stack overflow
 
-# load control data
-# set working directory on personal laptop
-# setwd("C:/Users/Courtney/Documents/PhD/Project/Experiment_code/valter")
 setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/")
 
 dat <- loadWorkbook("Data_Lie_Numbers_Clean.xlsx")
@@ -106,19 +83,18 @@ Here I am loading the data. I set my working directory using the *setwd()* funct
 ## Checking for na values
 
 ```{r}
-count(is.na(Lie_SNARC))
-count(is.na(Control_SNARC))
-
 Lie_SNARC %>%
+  dplyr::select(numbers, accuracy, RTs) %>%
   dplyr::filter(is.na(RTs))
 
 Control_SNARC %>%
+  dplyr::select(numbers, accuracy, RTs) %>%
   dplyr::filter(is.na(RTs))
 ```
 
-The first thing I do when I get a new dataset is check for na values. If these are not sorted, they can become an issue when analysing the data. I use the *count()* and *is.na()* function to tell me where and how many na values each dataset has. In the *Lie_SNARC* dataset, I have 43 trials with an na value within the RT column. For the *Control_SNARC* dataset, I have 1 trial with an value within the RT column.
+The first thing I do when I get a new dataset is check for na values. If these are not sorted, they can become an issue when analysing the data. I use the *is.na()* function to tell me where and how many na values each dataset has. In the *Lie_SNARC* dataset, I have 43 trials with an na value within the RT column. For the *Control_SNARC* dataset, I have 1 trial with an value within the RT column.
 
-To further investigate, I filter both dataframes to look at the trials that have na values. For each na, the accurary is 0. I assume what has happened is te subject has ran out of time to respond or inputted an invalid resposne thus they do not get an RT and the accuracy is indicated as an error.
+To further investigate, I filter both dataframes to look at the trials that have na values. For each na, the accurary is 0. I assume what has happened is the subject has ran out of time to respond or inputted an invalid resposne thus they do not get an RT and the accuracy is indicated as an error.
 
 **Dealing with NA values**
 
@@ -158,7 +134,7 @@ workingdata <- workingdata %>%
 
 Again, this is for my own benefit. I am creating a column to replace "key" as I found it confusing. The new column is called hand and denotes the left or right hand to make it easier to understand the dataframe.
 
-The *case_when* function allows me to create a new column of data dependiing on the value of the *key*.
+The *case_when* function allows me to create a new column of data dependiing on the value of another variable - in this case, *key*.
 
 ## Creating parity column
 
@@ -169,16 +145,16 @@ workingdata <- workingdata %>%
 
 Finally, I create a *parity* column. The *ifelse()* function evaluates the first argument. When the value in the numbers column is divided by 2, if it equals 0 create a new column and insert *even*. For an other value after dividing, it much be odd thus insert *odd*.
 
-I have cleaned the data and set it up in a way I feel comfortable. The above data manipulation is personal preference, but I will be using the variables created above for the rest of the analysis.
+I have cleaned the data and set it up in a way I feel comfortable. The data manipulation so far is personal preference, but I will be using the variables created above for the rest of the analysis.
 
-## Overview conditions - error per condition and mean RTs (replication of slide 2)
+## Overview conditions - (replication of slide 2)
 
 The following code computes average errors and meanRTs for each condition.
 
 ```{r}
 workingdata$condition <- factor(workingdata$condition, levels = c("controltrue", "exptrue", "explie"))
 
-# errors percentage 
+"error pecentage" 
 ggplot(workingdata %>%
   dplyr::group_by(condition, accuracy) %>%
   dplyr::summarise(acc_num = n()) %>%
@@ -194,7 +170,7 @@ ggplot(workingdata %>%
   ggtitle("Errors %") +
   theme_gray() 
 
-# errors in each condition
+"errors per condition"
 ggplot(workingdata %>%
          dplyr::filter(accuracy == 0) %>%
          dplyr::group_by(condition) %>%
@@ -207,7 +183,7 @@ ggplot(workingdata %>%
     ggtitle("Errors") +
   theme_gray() 
 
-# mean RTS in each condition for correct repsonses
+"mean RTS per  condition"
 ggplot(workingdata %>%
          drop_na() %>%
          dplyr::filter(accuracy == 1) %>%
@@ -228,10 +204,10 @@ The above code computes the graphs for slide 2 in the presentation that you sent
 - Percentage of errors per condition (higher percentage of errors where the police officer was present)
 - Mean reaction time per conditon (faster RTs for the control condition i.e. no pictures, just standard SNARC)
 
-## Control condition RTs (lawyer only) - Odd effect and MARC effect for RTs (replication of slide 3)
+## Control condition RTs (lawyer only) - (replication of slide 3)
 
 ```{r}
-### line graph - RTs over different numbers
+"RTs over different numbers"
 ggplot(workingdata %>%
          drop_na() %>%
          dplyr::filter(condition == "controltrue") %>%
@@ -243,7 +219,7 @@ ggplot(workingdata %>%
   scale_y_continuous("Mean RT (s)", breaks = seq(0, 0.62, 0.02)) +
   ggtitle("RTs for left and right hands across numbers")
 
-### Odd effect - plots with 95% CIs and corresponding t-test
+"Odd effect (95% CIs and corresponding t-test"
 workingdata$parity <- factor(workingdata$parity, levels = c("odd", "even"))
 
 ggplot(workingdata %>%
@@ -265,7 +241,7 @@ control_ttest_df <- reshape(control_ttest_df, idvar = "participant", timevar = "
 t.test(control_ttest_df$RTs.even, control_ttest_df$RTs.odd, paired = TRUE)
 cohen.d(control_ttest_df$RTs.even, control_ttest_df$RTs.odd, paired = TRUE)
 
-### MARC effect - plots 95% CIs and corresponding 2x2 ANOVA
+"MARC effect (95% CIs and corresponding 2x2 ANOVA"
 workingdata$parity <- factor(workingdata$parity, levels = c("odd", "even"))
 workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 
@@ -303,6 +279,10 @@ The corresponding t-test comparing the 2 means comes out as non-signifcant [t(37
 Appears to the show a fairly strong parity x hand interaction - RTs are faster when the hand repsonded with and the pairty are conrguent (left-odd, right-even).
 
 2x2 ANOVA reveals significant interaction with large effect size [f(1, 37) = 4.61, p < 0.001, eta^2 = 0.11].
+
+**Consideration** 
+
+A standard ANOVA assumes a normal distribution however RTs rarely follow a normal distribution, hence GLMs often provide more statistical power when analysing RT data because you can specify an error distribution that fits you data (such as Gamma or Inverse-Gaussian). This paper details differences in analysing RT data between linear and generalised linear *mixed effects* model however I think the same applies when not specifying mixed effects (https://www.frontiersin.org/articles/10.3389/fpsyg.2015.01171/full)
 
 ## Control condition RTs (lawyer only) - SNARC effect for RTs (replication of slide 4)
 
