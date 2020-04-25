@@ -60,6 +60,7 @@ library(sjstats) # for calculating effect sizes for ANOVA
 library(effsize) # cohen's D function
 library(lme4) # for linear mixed effects modelling
 library(lmtest) # testing linear regression models
+library(fitdistrplus)
 ```
 
 Above I am loading the packages that will be necessary for the analysis. Each package has specific utilities that will be needed to perform analysis. It is important to load them at the start of your script otherwise you will encounter errors.
@@ -280,18 +281,18 @@ Appears to the show a fairly strong parity x hand interaction - RTs are faster w
 
 2x2 ANOVA reveals significant interaction with large effect size [f(1, 37) = 4.61, p < 0.001, eta^2 = 0.11].
 
-**Consideration** 
+**Consideration - ANOVA versus GLM** 
 
-A standard ANOVA assumes a normal distribution however RTs rarely follow a normal distribution, hence GLMs often provide more statistical power when analysing RT data because you can specify an error distribution that fits you data (such as Gamma or Inverse-Gaussian). This paper details differences in analysing RT data between linear and generalised linear *mixed effects* model however I think the same applies when not specifying mixed effects (https://www.frontiersin.org/articles/10.3389/fpsyg.2015.01171/full)
+A standard ANOVA assumes a normal distribution, however RTs rarely follow a normal distribution. GLMs often provide more statistical power when analysing RT data because you can specify an error distribution that fits your data better (such as Gamma or Inverse-Gaussian). This paper details differences in analysing RT data between linear and generalised linear *mixed effects* model however I think the same applies when not specifying mixed effects (https://www.frontiersin.org/articles/10.3389/fpsyg.2015.01171/full)
 
-## Control condition RTs (lawyer only) - SNARC effect for RTs (replication of slide 4)
+## Control condition RTs (lawyer only) - (replication of slide 4)
 
 ```{r}
-### creating magnitude variable
+"creating magnitude variable"
 workingdata <- workingdata %>%
   dplyr::mutate(magnitude = case_when(numbers <= 4 ~ "small",
                                       numbers > 4 ~ "large"))
-### SNARC effect - plot with 95% CIs and 2x2 ANOVA
+"SNARC effect  (95% CIs and 2x2 ANOVA)"
 workingdata$magnitude <- factor(workingdata$magnitude, levels = c("small", "large"))
 workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 
@@ -299,8 +300,8 @@ ggplot(workingdata %>%
          drop_na() %>%
          dplyr::filter(condition == "controltrue") %>%
          summarySE(measurevar = "RTs", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = RTs)) +
-         stat_summary(fun.y = mean, geom = "point") +
-         stat_summary(fun.y = mean, geom = "line") +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   ggtitle("SNARC effect RT analysis")
 
@@ -322,9 +323,15 @@ This indicates a classic SNARC in the only lawyer control condition (i.e. when r
 
 ##  Control condition errors (lawyer only) - Odd effect error analysis (assessing distribution)
 
-For the odd effect error analyses, I do slightly different analysis to what you did. For investigating errors in the control condition, I utilise a generalised linear mixed effects model - specifically, a logistic mixed effect GLM. Accuracy is a dichotomous dependent variable and thus the assumptions of a standard ANOVA will be violated. A logistic GLM can be used to model an event that exists in a pass/fail, correct/error state, such as accuracy.
+For the odd effect error analyses, I do a slightly different analysis to what you did. For investigating errors in the control condition, I utilise a generalised linear mixed effects model - specifically, a logistic mixed effect regression. I do this for the following reasons:
 
-When you have a dichotomous dependent variable, it is desirable to have a model and that predicts whether a value is 0 or 1. A linear regression (essentially a standard ANOVA) does not allow you to do this because the predicted y variable may not be restricted to a value between 0 and 1. Conversely, a logistic model can produce a probability score or the probability of the of the occurence of the event. 
+1) Accuracy data is binomial data. This means it is a dichotomous dependent variable that exists in one of two states - correct or incorrect. This violates the assumptions of a standard ANOVA, thus we can model the data better if we specify the correct error distribution. 
+
+2) When you have a dichotomous dependent variable, it is desirable to have a model and that predicts whether a value is 0 or 1. A linear regression (essentially a standard ANOVA) does not allow you to do this because the predicted y variable may not be restricted to a value between 0 and 1. Conversely, a logistic model can produce a probability score or the probability of the of the occurence of the event. 
+
+3) The experimental design was repeated measures, which allows for the inclusion of participants as a random effect in a multi-level model. This means we can model an between participant variability in RT and thus capture more unexplained variance. Again, this will provide more statistical power. 
+
+Below, I fit the 2 distributions to the data to demonstrate why a logistic regression is more appropriate than an ANOVA
 
 ```{r}
 dist <- workingdata %>%
@@ -340,25 +347,25 @@ fit_l$aic
 fit_n$aic
 ```
 
-To demonstrate this, I fit the accuracy data to both a logistic and normal distribution. As you can see via the histogram densities and the AIC, the logistic distribution is the better fit. Because of this, we should us a logistic regression rather than an ANOVA.
+To demonstrate this, I fit the accuracy data to both a logistic and normal distribution. As you can see via AIC value (lower number demonstrate better fits), the logistic distribution is a much better fit. Because of this, we should us a logistic regression rather than an ANOVA.
 
-##  Control condition errors (lawyer only) - Odd effect error analysis (replication of slide 5)
+##  Control condition errors (lawyer only) - (replication of slide 5)
 
 To compute a logistic regression, I need to specify a binomial distribution. A binomial distribution is a discrete probability distribution. This means it focuses on the number of succusses within a sample which is what we need when focusing on accuracy. I also include a *logit* link function which is a transformation parameter - it is the logarithm of odds. This means we can investigate how manipulaing our indepenent variable affects the odds of scoring an accurate response. 
 
 I use mixed effect in order to account for the repeated measures design. I specify that each participant has their own intercept (a random effect) to model for each subject.
 
-I also focus on the accuracy percentage rather than the number of errors - this helps with the interpretation of the logistic regression models as they assess the probability of a correct answer. Higher probability of correct answer relates to increased accuracy percentage.
-
 ```{r}
-### Odd effect error analysis with logistic regression
+"Odd effect error analysis"
 ggplot(workingdata %>%
          dplyr::filter(condition == "controltrue") %>%
-         summarySE(measurevar = "accuracy", groupvars = c("parity")), aes(x = parity, y = accuracy)) + 
+         dplyr::group_by(parity) %>%
+         dplyr::filter(accuracy == 0) %>%
+         dplyr::summarise(errors = n()) %>%
+         summarySE(measurevar = "errors", groupvars = c("parity")), aes(x = parity, y = errors)) + 
   geom_col() +
-  geom_errorbar(aes(ymin = accuracy - ci, ymax = accuracy + ci), width = .2) +
-  coord_cartesian(ylim = c(0.80, 1)) +
-  ylab("Accuracy (%)") +
+  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .2) +
+  ylab("Number of errors") +
   scale_x_discrete("Parity", labels = c("odd" = "Odd", "even" = "Even")) +
   ggtitle("Odd effect - error analysis")
 
@@ -369,16 +376,33 @@ oddeffect_model <- glmer(accuracy ~ parity + (1 | participant),
 
 summary(oddeffect_model)
 
-exp(0.5231)
+exp(fixef(oddeffect_model))
+exp(confint(oddeffect_model))
 
-(1 - exp(0.5231)) * 100
 ```
 
-The effect of parity here refers to response accuracy when responding to even numbers. The logistic GLM indicates a significant effect of parity via the object *parityeven*. The estimate output is positive, suggesting that the even numbers significantly increase the probability of an accurate response. Plotting errors in a bar chart visualises this - even numbers have lower number of errors made. 
+**Coefficients versus odds ratio**
+When performing logistic regressions, coefficients can be hard to interpret due to the dichotamous nature of the data. If we exponentiate the coefficient, we get the odds-ratio.
 
-To further investiagte this, we must look at the estimate. If we exponentiate the logistic regression estimate, we can interepret it as an odds ratio i.e. the association between exposure (even or odd numbers) and the outcome (a correct or incorrect response). Doing this indicates that the odds ratio of a correct response increase by a factor of 1.68725 (69%) when numbers are even i.e. the correct answer is 1.6 times more likely when the number is even versus when it is odd. This statistically highlights the odd effect. 
+- If an odds ratio is 1, both outcomes have an equal chance of occuring. For example if the odd ratio was 1, accurate and error responses would be equally as likely when responding with the left and right hand. 
 
-Further explanation can be found here (https://stats.stackexchange.com/questions/57031/interpreting-interaction-terms-in-logit-regression-with-categorical-variables)
+- If an odds ratio is below 1, then a particular level of parity would decrease the chance of an accurate result. For example, an odds ratio of 0.5 would mean a level of parity has odds of 1:2, or a accurate result for every two errors.
+
+- If an odds-ratio is larger than 1, a level of parity would increase the chance of an accurate result. For example, an odds ratio of 3 would mean a level of parity has odds of 3:1 or 3 accurate results for every 1 error.
+
+**Interpretation of our results**
+
+*Fixed effects*
+
+The regression coefficient explains the change in log(odds) of the response variable (accuracy) for one unit change in the predictor variable (odd versus even numbers). In our output, odd numbers result in a decrease in the log(odds) of an accurate response. The z statistic is the equivalent of the t statistic and along with the p value, indicates that this decrease in probability of an accurate response is significant.
+
+*Odds ratio*
+
+As mentioned previous, this coefficient is hard to interpret. Thus we exponentiate it. This reveals that odd numbers result in an accuruate response at odds of 0.59:1, or just 59% of the time. This is significantly worse than for even numbers and demonstrates the odd effect.
+
+*Random effects*
+
+The standard deviation of the random effects is quite high in relation to the the estimate. This suggests some substantial variability between partipants in reaction time. 
 
 ##  Control condition errors (lawyer only) - MARC effect error analysis (replication of slide 5)
 
