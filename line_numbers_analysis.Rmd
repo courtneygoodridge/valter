@@ -47,11 +47,17 @@ It works in concordance with other packages (ggplot2) so you can manipulate data
 
 ```{r echo = TRUE,  message = 'hide', warning = 'hide', results = 'hide'}
 # rm(list = ls())
+
+"Data visualiation"
 library(ggplot2) # for plotting
+
+"Data manipulation/loading"
 library(dplyr) # data manipulation
 library(tidyr) # data manipulation
 library(readxl) # reading excel files 
 library(openxlsx) # loads data sets from multiple sheets
+
+"Inferential stats and modelling"
 library(car) # inferential stats
 library(MASS) # inferential stats
 library(EnvStats) # inferential stats
@@ -60,7 +66,7 @@ library(sjstats) # for calculating effect sizes for ANOVA
 library(effsize) # cohen's D function
 library(lme4) # for linear mixed effects modelling
 library(lmtest) # testing linear regression models
-library(fitdistrplus)
+library(fitdistrplus) # distribution fits
 library(ez) # repeated measures ANOVA 
 ```
 
@@ -69,8 +75,6 @@ Above I am loading the packages that will be necessary for the analysis. Each pa
 ## Loading data
 
 ```{r echo = TRUE, message = 'hide', warning = 'hide', results = 'hide'} 
-# dput(head(df,n)) provides example of data structure for stack overflow
-
 setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/")
 
 dat <- loadWorkbook("Data_Lie_Numbers_Clean.xlsx")
@@ -105,13 +109,11 @@ When focusing on just error analysis, I shall keep the na values as they provide
 ## Renaming conditions
 
 ```{r}
-# cleaning control condition
 Control_SNARC <- Control_SNARC %>%
   dplyr::select(numbers, condition, key, accuracy, RTs, participant) %>%
   arrange(participant) %>%
   mutate(condition = "controltrue")
 
-# cleaning experimental conditon
 Lie_SNARC <- Lie_SNARC %>%
   dplyr::select(numbers, condition, key, accuracy, RTs, participant) %>%
   arrange(participant) %>%
@@ -149,7 +151,7 @@ Finally, I create a *parity* column. The *ifelse()* function evaluates the first
 
 I have cleaned the data and set it up in a way I feel comfortable. The data manipulation so far is personal preference, but I will be using the variables created above for the rest of the analysis.
 
-## Overview conditions - (replication of slide 2)
+## General overview of the conditions - (replication of slide 2)
 
 The following code computes average errors and meanRTs for each condition.
 
@@ -206,7 +208,7 @@ The above code computes the graphs for slide 2 in the presentation that you sent
 - Percentage of errors per condition (higher percentage of errors where the police officer was present)
 - Mean reaction time per conditon (faster RTs for the control condition i.e. no pictures, just standard SNARC)
 
-## Control condition RTs (lawyer only) - (replication of slide 3)
+## Control condition - lawyer only - MARC effect error analysis - replication of slide 3
 
 ```{r}
 "RTs over different numbers"
@@ -286,7 +288,7 @@ Appears to the show a fairly strong parity x hand interaction - RTs are faster w
 
 A standard ANOVA assumes a normal distribution, however RTs rarely follow a normal distribution. GLMs often provide more statistical power when analysing RT data because you can specify an error distribution that fits your data better (such as Gamma or Inverse-Gaussian). This paper details differences in analysing RT data between linear and generalised linear *mixed effects* model however I think the same applies when not specifying mixed effects (https://www.frontiersin.org/articles/10.3389/fpsyg.2015.01171/full)
 
-## Control condition RTs (lawyer only) - SNARC effect for RTs(replication of slide 4)
+## Control condition -  lawyer only - SNARC effect for RTs (replication of slide 4)
 
 ```{r}
 "creating magnitude variable"
@@ -322,7 +324,7 @@ Significant main effect of magnitude (smaller number reacted to faster) however 
 
 This indicates a classic SNARC in the only lawyer control condition (i.e. when responding to larger numbers with right hard, RTs are faster. When responding to small numbers with left hand, RTs are faster). 
 
-##  Control condition errors (lawyer only) - Odd effect error analysis (assessing distribution)
+## Control condition -  lawyer only - Odd effect error analysis - assessing distribution
 
 For the odd effect error analyses, I do a slightly different analysis to what you did. For investigating errors in the control condition, I utilise a generalised linear mixed effects model - specifically, a logistic mixed effect regression. I do this for the following reasons:
 
@@ -350,7 +352,7 @@ fit_n$aic
 
 To demonstrate this, I fit the accuracy data to both a logistic and normal distribution. As you can see via AIC value (lower number demonstrate better fits), the logistic distribution is a much better fit. Because of this, we should us a logistic regression rather than an ANOVA.
 
-##  Control condition errors (lawyer only) - Odd effect error analysis (replication of slide 5)
+## Control condition -  lawyer only - Odd effect error analysis - replication of slide 5
 
 To compute a logistic regression, I need to specify a binomial distribution. A binomial distribution is a discrete probability distribution. This means it focuses on the number of succusses within a sample which is what we need when focusing on accuracy. I also include a *logit* link function which is a transformation parameter - it is the logarithm of odds. This means we can investigate how manipulaing our indepenent variable affects the odds of scoring an accurate response. 
 
@@ -406,7 +408,7 @@ As mentioned previous, this coefficient is hard to interpret. Thus we exponentia
 
 The standard deviation of the random effects is quite high in relation to the the estimate. This suggests some substantial variability between partipants in reaction time. 
 
-##  Control condition errors (lawyer only) - MARC effect error analysis (replication of slide 5)
+##  Control condition - lawyer only - MARC effect error analysis - replication of slide 5
 
 ```{r}
 "MARC effect error analysis"
@@ -450,7 +452,7 @@ The odd ratio for the *response_handright:parityodd* object suggests that when t
 
 The line plot visualises this interaction. There are fewer errors (more accurate responses) when responding to odd numbers with the right hand. However the plot also reveals something else - this interacton appears to be driven by responding with the left hand. The number of errors with the right hand is consistent whether repsonding to even or odd numbers. However difference for the left hand is much bigger.
 
-##  Control condition errors (lawyer only) - SNARC effect error analysis (replication of slide 5)
+##  Control condition - lawyer only - SNARC effect error analysis - replication of slide 5
 
 ```{r}
 "SNARC effect errors"
@@ -491,7 +493,7 @@ First we calculate the odds ratio of the *response_handleft:magnitudelarge* obje
 
 I implement a line plot to visualise the significant interaction. The line plot visualises this interaction. As highlighted by the logistic regression model, accuracy is higher for left + small pairs and right + large pairs. This is the opposite of the traditional SNARC effect.
 
-**Overview**
+## Overview of the analysis and results of the control condition
 
 RTs show evidence of SNARC and MARC effect via significant ANOVAs (however I would possibly suggests using GLMs to analyse this).
 
@@ -499,9 +501,9 @@ Logistic regression analysis for the error effects matches the analysis on slide
 
 Like Valter suggested, there could be trade off - decreases in reaction time lead to decreases in accuracy for the observed effects.
 
-Now that the lawyer only condition is analysed (both accuracy and RTs), the focus switches to experimental condition. We start with the when the lawyer is present in the "lie" experimental condition
+Now that the control condition is analysed (both accuracy and RTs), the focus switches to experimental condition. We start with the when the lawyer is present in the "lie" experimental condition
 
-## Lawyer lie RTs (lawyer in experimental condition) - Odd effect and MARC effect for RTs (replication of slide 7)
+## Experimental condition - lawyer only - Odd and MARC effect for RTs - replication of slide 7
 
 ```{r}
 "RTs over different numbers"
@@ -570,7 +572,7 @@ T-test reveales significant odd effect - faster reaction times for even numbers,
 
 ANOVA reveals significant interaction between parity and hand responded with, alongside a large effect size indicating a MARC effect (however I would still consider a GLM due to distribution of RT data). 
 
-## Laywer lie RTs (lawyer only in experimental condition) SNARC effect for RTs - replication of slide 8
+## Experimental condition - lawyer only - SNARC effect for RTs - replication of slide 8
 
 ```{r}
 "SNARC effect  (95% CIs and 2x2 ANOVA)"
@@ -599,7 +601,7 @@ eta_sq(result_SNARC$aov, partial = TRUE)
 
 A significant interaction with large effect size indicating a classic SNARC in the exerimental condition where a lawyer is present. When responding to larger numbers with right hard, RTs are faster. When responding to small numbers with left hand, RTs are faster). 
 
-## Lawyer only in experimental condition - Odd effect error analysis - replication of slide 9
+## Experimental condition - lawyer only - Odd effect error analysis - replication of slide 9
 
 ```{r}
 "Odd effect error analysis"
@@ -636,7 +638,7 @@ Odds ratio of the *parityeven* object estimate reveals that odds of an accuarate
 
 The standard deviation of the random effects is quite high in relation to the the estimate (SD = 0.72). This suggests some substantial variability between partipants in accuracy.
 
-## Lawyer only in experimental condition - MARC effect error analysis - replication of slide 9
+## Experimental condition - lawyer only - MARC effect error analysis - replication of slide 9
 
 ```{r}
 "MARC effect error analysis"
@@ -675,7 +677,7 @@ exp(confint(MARCeffect_model))
 
 We focus on the significant interaction between parity and hand via the *handright:parityeven* object. The odds ratio indicates odds of an accurate response are when hand and parity are congruant arre 0.55:1, suggesting that errors are more likely. Similar to the control condiition, it appears their is an inversed MARC effect. This is visualised in via the line plot.
 
-## Lawyer only in experimental condition - SNARC effect error analysis - replication of slide 9
+## Experimental condition - lawyer only - SNARC effect error analysis - replication of slide 9
 
 ```{r}
 "SNARC effect for errors"
@@ -713,3 +715,224 @@ exp(confint(SNARCeffect_model))
 The odd ratio of the *handleft:magnitudelarge* interaction object suggests that when responding with incongruant hand and number magnitude, the odds of an accurate response increase to 1.72:1. suggesting accuracy in responses increases. Once again, this is the opposite of the traditional SNARC effect.
 
 The line plot visualises this interaction. Accuracy is reduced for left + small pairs and right + large pairs. This is the opposite of the traditional SNARC effect.
+
+## Overview of experimental condition (lawyer only)
+
+The analysis provide the same results as the control condition. The results here mirror those in Valter original analysis, however I propose computing a logistic mixed effects models. Now move onto the final condition - experimental where the cop is also present. 
+
+## Experimental condition - cop and lawyer present - Odd  and MARC effect for RTs - replication of slide 11
+
+```{r}
+"RTs over different numbers"
+ggplot(data = workingdata %>%
+         drop_na() %>%
+         dplyr::filter(condition == "explie") %>%
+         dplyr::group_by(numbers, response_hand) %>%
+         dplyr::summarise(meanRT = mean(RTs)), aes(x = numbers, y = meanRT, col = response_hand)) +
+  geom_point() +
+  geom_line() +
+  scale_x_continuous("Numbers", breaks = seq(0, 9, 1)) +
+  scale_y_continuous("Mean RT (s)", breaks = seq(0, 0.82, 0.02)) +
+  ggtitle("RTs for left and right hands across numbers")
+
+"Odd effect (95% CIs and corresponding t-test)"
+workingdata$parity <- factor(workingdata$parity, levels = c("odd", "even"))
+
+ggplot(workingdata %>%
+         dplyr::filter(condition == "explie") %>%
+         drop_na() %>%
+         summarySE(measurevar = "RTs", groupvars = c("parity")), aes(x = parity, y = RTs)) + 
+  geom_col() +
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .2) +
+  coord_cartesian(ylim = c(0, 1)) +
+  ggtitle("Odd effect RT analysis")
+
+exp_true_ttest <- workingdata %>%
+  dplyr::filter(condition == "explie") %>%
+  dplyr::select(RTs, parity, participant)
+
+exp_true_ttest <- reshape(exp_true_ttest, idvar = "participant", timevar = "parity", direction = "wide")
+
+t.test(exp_true_ttest$RTs.even, exp_true_ttest$RTs.odd, paired = TRUE)
+cohen.d(exp_true_ttest$RTs.even, exp_true_ttest$RTs.odd, paired = TRUE)
+
+"MARC effect 95% CIs and corresponding 2x2 ANOVA)"
+workingdata$parity <- factor(workingdata$parity, levels = c("odd", "even"))
+workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
+
+ggplot(workingdata %>%
+         dplyr::filter(condition == "explie") %>%
+         drop_na() %>%
+         summarySE(measurevar = "RTs", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = RTs)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ggtitle("MARC effect RT analysis")
+
+result_MARC <- ezANOVA(workingdata %>%
+                         drop_na() %>%
+                         dplyr::filter(condition == "explie"), dv = RTs, wid = participant, within = .(parity, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
+result_MARC
+
+eta_sq(result_MARC$aov, partial = TRUE)
+```
+
+**Left-right line graph**
+
+No obviously visible relationship between response hand and numbers. Perhaps the beginning of an inverse MARC effect (right hand responses appear quicker for a few odd numbers - 1, 3, 7, 9 however this could just be random variation). 
+
+**Odd effect**
+ 
+T-test reveals no significant odd effect.
+
+**MARC effect**
+
+ANOVA reveals non-significant main effects and interactions. Line plot shows that reverse MARC effect could be happening however this is not significant.
+
+## Experimental condition - lawyer and cop present - SNARC effect for RTs - replication of slide 12
+
+```{r}
+"SNARC effect  (95% CIs and 2x2 ANOVA)"
+workingdata$magnitude <- factor(workingdata$magnitude, levels = c("small", "large"))
+workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
+
+ggplot(workingdata %>%
+         drop_na() %>%
+         dplyr::filter(condition == "explie") %>%
+         summarySE(measurevar = "RTs", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = RTs)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ggtitle("SNARC effect RT analysis")
+
+result_SNARC <- ezANOVA(workingdata %>%
+                          drop_na() %>%
+                          dplyr::filter(condition == "explie"), dv = RTs, wid = participant, within = .(magnitude, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
+result_SNARC
+
+eta_sq(result_SNARC$aov, partial = TRUE)
+```
+
+
+**2x2 factorial ANOVA**
+
+Main effects and interactions remain non-significant. Line plot indicates no real relationship that I can make sense of.
+
+## Experimental condition - cop and lawyer present - Odd effect error analysis - replication of slide 13
+
+```{r}
+"Odd effect error analysis"
+ggplot(workingdata %>%
+         dplyr::filter(condition == "explie") %>%
+         drop_na() %>%
+         dplyr::group_by(parity) %>%
+         dplyr::filter(accuracy == 0) %>%
+         dplyr::summarise(errors = n()) %>%
+         summarySE(measurevar = "errors", groupvars = c("parity")), aes(x = parity, y = errors)) + 
+  geom_col() +
+  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .2) +
+  ylab("Number of errors") +
+  scale_x_discrete("Parity", labels = c("odd" = "Odd", "even" = "Even")) +
+  ggtitle("Odd effect - error analysis")
+
+oddeffect_model <- glmer(accuracy ~ parity + (1 | participant),
+             data = workingdata %>%
+               dplyr::filter(condition == "explie") %>%
+               drop_na(),
+             family = binomial(link = "logit"))
+
+summary(oddeffect_model)
+
+exp(fixef(oddeffect_model))
+exp(confint(oddeffect_model))
+```
+
+*Odd ratio*
+
+Odds ratio of the *parityeven* is 1.10, suggesting that an accurate response is no more likely when presented with an even number of an odd number. This demonstrates no odd effect.
+
+*Random effects*
+
+The standard deviation of the random effects is once again quite high in relation to the the estimate (SD = 0.67) suggesting substantial variability between partipants in accuracy.
+
+## Experimental condition - lawyer and cop present - MARC effect error analysis - replication of slide 13
+
+```{r}
+"MARC effect error analysis"
+workingdata$response_hand = factor(workingdata$response_hand, levels = c("left", "right"))
+workingdata$parity = factor(workingdata$parity, levels = c("odd", "even"))
+
+ggplot(workingdata %>%
+         dplyr::filter(condition == "explie") %>%
+         drop_na() %>%
+         dplyr::group_by(parity, response_hand) %>%
+         dplyr::filter(accuracy == 0) %>%
+         dplyr::summarise(errors = n()) %>%
+         dplyr::ungroup() %>%
+         summarySE(measurevar = "errors", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = errors)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .1) +
+  ylim(0, 250) +
+  ylab("Number of errors") +
+  xlab("Parity") +
+  ggtitle("MARC effect - error analysis")
+
+MARCeffect_model <- glmer(accuracy ~ response_hand * parity + (1 | participant),
+             data = workingdata %>%
+               drop_na() %>%
+               dplyr::filter(condition == "explie") %>%
+               drop_na(),
+             family = binomial(link = "logit"))
+
+summary(MARCeffect_model)
+
+exp(fixef(MARCeffect_model))
+exp(confint(MARCeffect_model))
+```
+
+**Error analysis of the MARC effect**
+
+Line plot shows evidence of an interaction with a characteristic MARC effect. The interaction from the logistic model shows that the interaction is small, and just misses out on being significant. Looking at the odds ratios, the odds of an accurate response when the response hand and parity are equal (*response_handright:parityeven* object) is 0.76:1. This is not far off 1:1 which would equate to equal chances for accurate and error response. This explains why the interaction just misses out on being significant.
+
+This finding is important, because a 2x2 ANOVA reveals a significant effect, however I do not believe it is the appropriate analysis. This is something to think about. 
+
+## Experimental condition - lawyer and cop present - SNARC effect error analysis - replication of slide 13
+
+```{r}
+"SNARC effect for errors"
+workingdata$response_hand = factor(workingdata$response_hand, levels = c("right", "left"))
+workingdata$magnitude = factor(workingdata$magnitude, levels = c("small", "large"))
+
+ggplot(workingdata %>%
+         dplyr::filter(condition == "explie") %>%
+         drop_na() %>%
+         dplyr::group_by(magnitude, response_hand) %>%
+         dplyr::filter(accuracy == 0) %>%
+         dplyr::summarise(errors = n()) %>%
+         dplyr::ungroup() %>%
+         summarySE(measurevar = "errors", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .1) +
+  ylim(0, 250) +
+  ylab("Number of errors") +
+  xlab("Magnitude") +
+  ggtitle("SNARC effect - error analysis")
+
+SNARCeffect_model <- glmer(accuracy ~ response_hand * magnitude + (1 | participant),
+             data = workingdata %>%
+               drop_na() %>%
+               dplyr::filter(condition == "explie") %>%
+               drop_na(),
+             family = binomial(link = "logit"))
+
+summary(SNARCeffect_model)
+
+exp(fixef(SNARCeffect_model))
+exp(confint(SNARCeffect_model))
+```
+
+The odd ratio of the *handleft:magnitudelarge* interaction object suggests that when responding with incongruant hand and number magnitude, the odds of an accurate response increase to 0.94:1, suggesting that when response hands and magnitude are incongruent, there is equal probability of an accurate or error response. 
+
+The line plot visualises an interaction which might suggest there is an inverse SNARC effect, however the interaction is very small.
