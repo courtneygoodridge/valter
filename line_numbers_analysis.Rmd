@@ -349,7 +349,7 @@ fit_n$aic
 
 To demonstrate this, I fit the accuracy data to both a logistic and normal distribution. As you can see via AIC value (lower number demonstrate better fits), the logistic distribution is a much better fit. Because of this, we should us a logistic regression rather than an ANOVA.
 
-##  Control condition errors (lawyer only) - (replication of slide 5)
+##  Control condition errors (lawyer only) - Odd effect error analysis (replication of slide 5)
 
 To compute a logistic regression, I need to specify a binomial distribution. A binomial distribution is a discrete probability distribution. This means it focuses on the number of succusses within a sample which is what we need when focusing on accuracy. I also include a *logit* link function which is a transformation parameter - it is the logarithm of odds. This means we can investigate how manipulaing our indepenent variable affects the odds of scoring an accurate response. 
 
@@ -359,6 +359,7 @@ I use mixed effect in order to account for the repeated measures design. I speci
 "Odd effect error analysis"
 ggplot(workingdata %>%
          dplyr::filter(condition == "controltrue") %>%
+         drop_na() %>%
          dplyr::group_by(parity) %>%
          dplyr::filter(accuracy == 0) %>%
          dplyr::summarise(errors = n()) %>%
@@ -371,7 +372,8 @@ ggplot(workingdata %>%
 
 oddeffect_model <- glmer(accuracy ~ parity + (1 | participant),
              data = workingdata %>%
-               dplyr::filter(condition == "controltrue"),
+               dplyr::filter(condition == "controltrue") %>%
+               drop_na(),
              family = binomial(link = "logit"))
 
 summary(oddeffect_model)
@@ -398,7 +400,7 @@ The regression coefficient explains the change in log(odds) of the response vari
 
 *Odds ratio*
 
-As mentioned previous, this coefficient is hard to interpret. Thus we exponentiate it. This reveals that odd numbers result in an accuruate response at odds of 0.59:1, or just 59% of the time. This is significantly worse than for even numbers and demonstrates the odd effect.
+As mentioned previous, this coefficient is hard to interpret. Thus we exponentiate it. This reveals that odd numbers result in an accuruate response at odds of 0.59:1, or just 59% of the time. This is significantly worse than for even numbers and demonstrates the odd effect. I have also computed confidence intervals for the odds ratio.
 
 *Random effects*
 
@@ -407,76 +409,88 @@ The standard deviation of the random effects is quite high in relation to the th
 ##  Control condition errors (lawyer only) - MARC effect error analysis (replication of slide 5)
 
 ```{r}
-### MARC effect for errors/accuracy
+"MARC effect error analysis"
 workingdata$response_hand = factor(workingdata$response_hand, levels = c("left", "right"))
 workingdata$parity = factor(workingdata$parity, levels = c("odd", "even"))
 
 ggplot(workingdata %>%
-         drop_na() %>%
          dplyr::filter(condition == "controltrue") %>%
-         summarySE(measurevar = "accuracy", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = accuracy)) +
-         stat_summary(fun.y = mean, geom = "point") +
-         stat_summary(fun.y = mean, geom = "line") +
-  geom_errorbar(aes(ymin = accuracy - ci, ymax = accuracy + ci), width = .1) +
-  ylab("Response accuracy (%)") +
+         drop_na() %>%
+         dplyr::group_by(parity, response_hand) %>%
+         dplyr::filter(accuracy == 0) %>%
+         dplyr::summarise(errors = n()) %>%
+         dplyr::ungroup() %>%
+         summarySE(measurevar = "errors", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = errors)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .1) +
+  ylim(0, 70) +
+  ylab("Number of errors") +
   xlab("Parity") +
   ggtitle("MARC effect - error analysis")
 
 MARCeffect_model <- glmer(accuracy ~ response_hand * parity + (1 | participant),
              data = workingdata %>%
                drop_na() %>%
-               dplyr::filter(condition == "controltrue"),
+               dplyr::filter(condition == "controltrue") %>%
+               drop_na(),
              family = binomial(link = "logit"))
 
 summary(MARCeffect_model)
 
-exp(-0.7641)
+exp(fixef(MARCeffect_model))
+exp(confint(MARCeffect_model))
 
-(1 - exp(-0.7641)) * 100
 ```
 
 **Error analysis of the MARC effect**
 
-Because we have a significant interaction, this is what our focus should be on. As mentioned for the odd effect, the exponentiated coefficient of the main effect gives your the odds ratio. The exponentiated coefficient of the interaction refers to the ratio by which the odds ratio changes. 
+Because we have a significant interaction, this is what our focus should be on. As mentioned for the odd effect, the exponentiated coefficient of the main effect gives your the odds ratio.
 
-In the context of the MARC effect, we find a significant interaction term between hand and parity via the *response_handright:parityeven* object. Once exponentiated, this indicates that when responding to an even number, the odds ratio for people responding with their right hand decreases by a factor of 0.4657529 (53%). Intuitively this seems to be the opposite of the traditional MARC effect as we would expect responding to even numbers to increase the odds ratio of an accurate response when responding with the right hand. It appears their is an inversed MARC effect. 
+The odd ratio for the *response_handright:parityodd* object suggests that when the response hand is right and the number is odd, the odds of an accurate response are 2.14:1, hence we would expect 2 accurate responses for every error. Intuitively this seems to be the opposite of the traditional MARC effect - we would expect responding to odd numbers with the right had to decrease the odds of an accurate response. It appears their is an inversed MARC effect. 
 
-Implementing a line plot visualises this interaction. Accuracy is reduced for left + odd pairs and right + even pairs. This is the opposite of the traditional MARC effect. 
+The line plot visualises this interaction. There are fewer errors (more accurate responses) when responding to odd numbers with the right hand. However the plot also reveals something else - this interacton appears to be driven by responding with the left hand. The number of errors with the right hand is consistent whether repsonding to even or odd numbers. However difference for the left hand is much bigger.
 
 ##  Control condition errors (lawyer only) - SNARC effect error analysis (replication of slide 5)
 
 ```{r}
 # SNARC effect for errors/accuracy
-workingdata$response_hand = factor(workingdata$resposne_hand, levels = c("right", "left"))
+workingdata$response_hand = factor(workingdata$response_hand, levels = c("right", "left"))
 workingdata$magnitude = factor(workingdata$magnitude, levels = c("small", "large"))
 
 ggplot(workingdata %>%
-         drop_na() %>%
          dplyr::filter(condition == "controltrue") %>%
-         summarySE(measurevar = "accuracy", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = accuracy)) +
-         stat_summary(fun.y = mean, geom = "point") +
-         stat_summary(fun.y = mean, geom = "line") +
-  geom_errorbar(aes(ymin = accuracy - ci, ymax = accuracy + ci), width = .1) +
-  ylab("Response accuracy (%)") +
+         drop_na() %>%
+         dplyr::group_by(magnitude, response_hand) %>%
+         dplyr::filter(accuracy == 0) %>%
+         dplyr::summarise(errors = n()) %>%
+         dplyr::ungroup() %>%
+         summarySE(measurevar = "errors", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .1) +
+  ylab("Number of errors") +
   xlab("Magnitude") +
   ggtitle("SNARC effect - error analysis")
 
 SNARCeffect_model <- glmer(accuracy ~ response_hand * magnitude + (1 | participant),
              data = workingdata %>%
                drop_na() %>%
-               dplyr::filter(condition == "controltrue"),
+               dplyr::filter(condition == "controltrue") %>%
+               drop_na(),
              family = binomial(link = "logit"))
 
 summary(SNARCeffect_model)
 
-exp(-0.9413)
-
-(1 - exp(-0.9413)) * 100
+exp(fixef(SNARCeffect_model))
+exp(confint(SNARCeffect_model))
 ```
 
-The significant interaction term of *response_handright:magnitudelarge* indicates that when responding to a large number, the odds ratio for people responding with their right hand decreases by a factor of 0.39 (60%). Intuitively this seems to be the opposite of the traditional SNARC effect (higher accuracy when magnitude and response hand are congruant). Thus I implement a line plot to visualise the significant interaction.
+**Error analysis of the SNARC effect**
 
-The line plot visualises this interaction. Accuracy is reduced for left + small pairs and right + large pairs. This is the opposite of the traditional SNARC effect.
+First we calculate the odds ratio of the *response_handleft:magnitudelarge* object. This reveals that when responding with the left hand and responding to large numbers, the odds of an accurate are 2.56:1, suggesting that there is 2 correct responses for every error. Intuitively, this seems to be the opposite of the traditional SNARC effect (higher accuracy when magnitude and response hand are congruant rather than incongruant).
+
+I implement a line plot to visualise the significant interaction. The line plot visualises this interaction. As highlighted by the logistic regression model, accuracy is higher for left + small pairs and right + large pairs. This is the opposite of the traditional SNARC effect.
 
 **Overview**
 
