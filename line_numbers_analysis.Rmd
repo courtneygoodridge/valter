@@ -61,6 +61,7 @@ library(effsize) # cohen's D function
 library(lme4) # for linear mixed effects modelling
 library(lmtest) # testing linear regression models
 library(fitdistrplus)
+library(ez) # repeated measures ANOVA 
 ```
 
 Above I am loading the packages that will be necessary for the analysis. Each package has specific utilities that will be needed to perform analysis. It is important to load them at the start of your script otherwise you will encounter errors.
@@ -494,60 +495,66 @@ I implement a line plot to visualise the significant interaction. The line plot 
 
 **Overview**
 
-RTs also show evidence of SNARC and MARC effect via significant ANOVAs
+RTs show evidence of SNARC and MARC effect via significant ANOVAs (however I would possibly suggests using GLMs to analyse this).
 
-Logistic regression analysis for the error effects matches the analysis on slide 5 - there is a significant odd effect (increased baseline odds of errors with an odd number) however the MARC and SNARC effects are inverted. Despite overall matching results, I believe I have used a more appropriate analyse technique given the nature of the data (dichotomous variables).
+Logistic regression analysis for the error effects matches the analysis on slide 5 - there is a significant odd effect, however the MARC and SNARC effects are inverted. The results match, however I believe I have used a more appropriate analyse technique given the nature of the data.
 
-Like Valter suggested, there could be trade off - decreases in reaction time lead to decreases in accuracy forthe observed effects.
+Like Valter suggested, there could be trade off - decreases in reaction time lead to decreases in accuracy for the observed effects.
 
 Now that the lawyer only condition is analysed (both accuracy and RTs), the focus switches to experimental condition. We start with the when the lawyer is present in the "lie" experimental condition
 
 ## Lawyer lie RTs (lawyer in experimental condition) - Odd effect and MARC effect for RTs (replication of slide 7)
 
 ```{r}
-### line graph - RTs over different numbers
+"RTs over different numbers"
 ggplot(data = workingdata %>%
+         drop_na() %>%
          dplyr::filter(condition == "exptrue") %>%
-         dplyr::group_by(numbers, hand) %>%
-         dplyr::summarise(meanRT = mean(RTs)), aes(x = numbers, y = meanRT, col = hand)) +
+         dplyr::group_by(numbers, response_hand) %>%
+         dplyr::summarise(meanRT = mean(RTs)), aes(x = numbers, y = meanRT, col = response_hand)) +
   geom_point() +
   geom_line() +
   scale_x_continuous("Numbers", breaks = seq(0, 9, 1)) +
   scale_y_continuous("Mean RT (s)", breaks = seq(0, 0.82, 0.02)) +
   ggtitle("RTs for left and right hands across numbers")
 
+"Odd effect (95% CIs and corresponding t-test)"
+workingdata$parity <- factor(workingdata$parity, levels = c("odd", "even"))
 
-lawyerlie <- workingdata %>%
-  dplyr::filter(condition == "exptrue")
-
-### Odd effect - plots with 95% CIs and corresponding t-test
-lawyerlie$parity <- factor(lawyerlie$parity, levels = c("odd", "even"))
-
-ggplot(data = summarySE(lawyerlie, measurevar = "RTs", groupvars = c("parity")), aes(x = parity, y = RTs)) + 
+ggplot(workingdata %>%
+         dplyr::filter(condition == "exptrue") %>%
+         drop_na() %>%
+         summarySE(measurevar = "RTs", groupvars = c("parity")), aes(x = parity, y = RTs)) + 
   geom_col() +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .2) +
   coord_cartesian(ylim = c(0.62, 0.82)) +
   ggtitle("Odd effect RT analysis")
 
-lawyerliettest <- lawyerlie %>%
+exp_true_ttest <- workingdata %>%
+  dplyr::filter(condition == "exptrue") %>%
   dplyr::select(RTs, parity, participant)
 
-lawyerliettest <- reshape(lawyerliettest, idvar = "participant", timevar = "parity", direction = "wide")
+exp_true_ttest <- reshape(exp_true_ttest, idvar = "participant", timevar = "parity", direction = "wide")
 
-t.test(lawyerliettest$RTs.even, lawyerliettest$RTs.odd, paired = TRUE)
-cohen.d(lawyerliettest$RTs.even, lawyerliettest$RTs.odd, paired = TRUE)
+t.test(exp_true_ttest$RTs.even, exp_true_ttest$RTs.odd, paired = TRUE)
+cohen.d(exp_true_ttest$RTs.even, exp_true_ttest$RTs.odd, paired = TRUE)
 
-### MARC effect - plots 95% CIs and corresponding 2x2 ANOVA
-lawyerlie$parity <- factor(lawyerlie$parity, levels = c("odd", "even"))
-lawyerlie$hand <- factor(lawyerlie$hand, levels = c("left", "right"))
+"MARC effect 95% CIs and corresponding 2x2 ANOVA)"
+workingdata$parity <- factor(workingdata$parity, levels = c("odd", "even"))
+workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 
-ggplot(data = summarySE(lawyerlie, measurevar = "RTs", groupvars = c("parity", "hand")), aes(x = parity, color = hand, group = hand, y = RTs)) +
-         stat_summary(fun.y = mean, geom = "point") +
-         stat_summary(fun.y = mean, geom = "line") +
+ggplot(workingdata %>%
+         dplyr::filter(condition == "exptrue") %>%
+         drop_na() %>%
+         summarySE(measurevar = "RTs", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = RTs)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   ggtitle("MARC effect RT analysis")
 
-result_MARC <- ezANOVA(lawyerlie, dv = RTs, wid = participant, within = .(parity, hand), type = 3, detailed = TRUE, return_aov = TRUE)
+result_MARC <- ezANOVA(workingdata %>%
+                         drop_na() %>%
+                         dplyr::filter(condition == "exptrue"), dv = RTs, wid = participant, within = .(parity, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
 result_MARC
 
 eta_sq(result_MARC$aov, partial = TRUE)
@@ -559,11 +566,11 @@ As per the lawyer control condition, we see faster RTs when parity and hand resp
 
 **Odd effect**
  
-T-test reveales significant odd effect - faster reaction times for even numbers.
+T-test reveales significant odd effect - faster reaction times for even numbers, however the effect is smaller.
  
 **MARC effect**
 
-ANOVA aslo reveals significant interaction between parity and hand responded with alongside a large effect size indicating a MARC effect. 
+ANOVA reveals significant interaction between parity and hand responded with, alongside a large effect size indicating a MARC effect (however I would still consider a GLM due to distribution of RT data). 
 
 ## Laywer lie RTs (lawyer only in experimental condition) SNARC effect for RTs - replication of slide 8
 
