@@ -245,7 +245,7 @@ control_ttest_df <- reshape(control_ttest_df, idvar = "participant", timevar = "
 t.test(control_ttest_df$RTs.even, control_ttest_df$RTs.odd, paired = TRUE)
 cohen.d(control_ttest_df$RTs.even, control_ttest_df$RTs.odd, paired = TRUE)
 
-"MARC effect (95% CIs and corresponding 2x2 ANOVA)"
+"MARC effect RTs"
 workingdata$parity <- factor(workingdata$parity, levels = c("odd", "even"))
 workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 
@@ -258,12 +258,14 @@ ggplot(workingdata %>%
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   ggtitle("MARC effect RT analysis")
 
-result_MARC <- ezANOVA(workingdata %>%
-                         drop_na() %>%
-                         dplyr::filter(condition == "controltrue"), dv = RTs, wid = participant, within = .(parity, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
-result_MARC
 
-eta_sq(result_MARC$aov, partial = TRUE)
+MARC <- glmer(RTs ~ parity * response_hand + (1 | participant),
+              family = Gamma(link = "identity"),
+              data = workingdata %>%
+                drop_na() %>%
+                dplyr::filter(condition == "controltrue"))
+
+summary(MARC)
 ```
 
 This code chunk aims to replicate slide 3 of the summary analysis.
@@ -278,15 +280,17 @@ The 95% CIs match the example. Mean RTs are slightly different by looking at the
 
 The corresponding t-test comparing the 2 means comes out as non-signifcant [t(37) = 0.23, p = 0.81].
 
-**MARC effect plot and 2X2 ANOVA**
+**MARC effect 2X2 ANOVA and my suggestion**
 
-Appears to the show a fairly strong parity x hand interaction - RTs are faster when the hand repsonded with and the pairty are conrguent (left-odd, right-even).
+A standard ANOVA assumes a normal distribution, however RTs rarely follow a normal distribution. GLMs and GLMERs often provide more statistical power when analysing RT data because you can specify an error distribution that fits your data better (such as Gamma or Inverse-Gaussian for RT data). This paper details differences in analysing RT data between linear and generalised linear *mixed effects* model however I think the same applies when not specifying mixed effects (https://www.frontiersin.org/articles/10.3389/fpsyg.2015.01171/full). You also might want to think about implementing mixed effects in your analysis - you have a repeated measures design and subjects might be more variable in some of the experimental conditions, which a mixed effects model can account for.
 
-2x2 ANOVA reveals significant interaction with large effect size [f(1, 37) = 4.61, p < 0.001, eta^2 = 0.11].
+**Fixed effects**
 
-**Consideration - ANOVA versus GLM** 
+The results indicate a negative effect on RT when the parity and response hand are congruent [beta = -0.06, t = -6.05, p < 0.001]. This indicates the standard MARC effect.
 
-A standard ANOVA assumes a normal distribution, however RTs rarely follow a normal distribution. GLMs often provide more statistical power when analysing RT data because you can specify an error distribution that fits your data better (such as Gamma or Inverse-Gaussian for RT data). This paper details differences in analysing RT data between linear and generalised linear *mixed effects* model however I think the same applies when not specifying mixed effects (https://www.frontiersin.org/articles/10.3389/fpsyg.2015.01171/full). You also might want to think about implementing mixed effects in your analysis - you have a repeated measures design and subjects might be more variable in some of the experimental conditions, which a mixed effects model can account for. 
+**Random effects**
+
+Standard deviations for participant intercepts are actually quite high with regard to the fixed effects estimate, suggesting some variability between participants. 
 
 ## Control condition -  lawyer only - SNARC effect for RTs (replication of slide 4)
 
@@ -295,7 +299,7 @@ A standard ANOVA assumes a normal distribution, however RTs rarely follow a norm
 workingdata <- workingdata %>%
   dplyr::mutate(magnitude = case_when(numbers <= 4 ~ "small",
                                       numbers > 4 ~ "large"))
-"SNARC effect  (95% CIs and 2x2 ANOVA)"
+"SNARC effect RTs"
 workingdata$magnitude <- factor(workingdata$magnitude, levels = c("small", "large"))
 workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 
@@ -308,19 +312,24 @@ ggplot(workingdata %>%
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   ggtitle("SNARC effect RT analysis")
 
-result_SNARC <- ezANOVA(workingdata %>%
-                          drop_na() %>%
-                          dplyr::filter(condition == "controltrue"), dv = RTs, wid = participant, within = .(magnitude, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
-result_SNARC
+SNARC <- glmer(RTs ~ magnitude * response_hand + (1 | participant),
+              family = Gamma(link = "identity"),
+              data = workingdata %>%
+                drop_na() %>%
+                dplyr::filter(condition == "controltrue"))
 
-eta_sq(result_SNARC$aov, partial = TRUE)
+summary(SNARC)
 ```
 
 Firstly I make dataframes *small* and *large* in order to compute a new variable called magnitude. This will be used (alongside hand) to analyse the SNARC effect
 
-**2x2 factorial ANOVA**
+**Fixed effects**
 
-Significant main effect of magnitude (smaller number reacted to faster) however more importantly, a significant interaction with large effect size [f(1, 37) = 4.64, p < 0.001, eta^2 = 0.11].
+The results indicate a negative effect on RT when the parity and response hand are congruent [beta = -0.02, t = -2.57, p = 0.009]. This indicates the standard SNARC effect.
+
+**Random effects**
+
+Standard deviations for participant intercepts are actually quite high with regard to the fixed effects estimate, suggesting some variability between participants. 
 
 This indicates a classic SNARC in the only lawyer control condition (i.e. when responding to larger numbers with right hard, RTs are faster. When responding to small numbers with left hand, RTs are faster). 
 
@@ -539,7 +548,7 @@ exp_true_ttest <- reshape(exp_true_ttest, idvar = "participant", timevar = "pari
 t.test(exp_true_ttest$RTs.even, exp_true_ttest$RTs.odd, paired = TRUE)
 cohen.d(exp_true_ttest$RTs.even, exp_true_ttest$RTs.odd, paired = TRUE)
 
-"MARC effect 95% CIs and corresponding 2x2 ANOVA)"
+"MARC effect RTs"
 workingdata$parity <- factor(workingdata$parity, levels = c("odd", "even"))
 workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 
@@ -550,14 +559,16 @@ ggplot(workingdata %>%
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ylim(0, 0.90) +
   ggtitle("MARC effect RT analysis")
 
-result_MARC <- ezANOVA(workingdata %>%
-                         drop_na() %>%
-                         dplyr::filter(condition == "exptrue"), dv = RTs, wid = participant, within = .(parity, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
-result_MARC
+MARC <- glmer(RTs ~ parity * response_hand + (1 | participant),
+              family = Gamma(link = "identity"),
+              data = workingdata %>%
+                drop_na() %>%
+                dplyr::filter(condition == "exptrue"))
 
-eta_sq(result_MARC$aov, partial = TRUE)
+summary(MARC)
 ```
 
 **Left-right line graph**
@@ -568,14 +579,19 @@ As per the lawyer control condition, we see faster RTs when parity and response 
  
 T-test reveals significant odd effect - faster reaction times for even numbers [t(37 = -3.30), p = 0.002], however the effect size is small (-0.39).
  
-**MARC effect**
+**Fixed effects**
 
-ANOVA reveals significant interaction between parity and hand responded with, alongside a large effect size indicating a MARC effect [f(1, 37 = 5.38, p < 0.001, eta^2 = 0.127)].
+The results indicate a negative effect on RT when the parity and response hand are congruent [beta = -0.07, t = -8.50, p < 0.001]. This indicates the standard SNARC effect.
+
+**Random effects**
+
+Standard deviations for participant intercepts are actually quite high with regard to the fixed effects estimate, suggesting some variability between participants. 
+
 
 ## Experimental condition - lawyer only - SNARC effect for RTs - replication of slide 8
 
 ```{r, echo=FALSE}
-"SNARC effect  (95% CIs and 2x2 ANOVA)"
+"SNARC effect RTs"
 workingdata$magnitude <- factor(workingdata$magnitude, levels = c("small", "large"))
 workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 
@@ -588,18 +604,22 @@ ggplot(workingdata %>%
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   ggtitle("SNARC effect RT analysis")
 
-result_SNARC <- ezANOVA(workingdata %>%
-                          drop_na() %>%
-                          dplyr::filter(condition == "exptrue"), dv = RTs, wid = participant, within = .(magnitude, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
-result_SNARC
+SNARC <- glmer(RTs ~ magnitude * response_hand + (1 | participant),
+              family = Gamma(link = "identity"),
+              data = workingdata %>%
+                drop_na() %>%
+                dplyr::filter(condition == "exptrue"))
 
-eta_sq(result_SNARC$aov, partial = TRUE)
+summary(SNARC)
 ```
 
+**Fixed effects**
 
-**2x2 factorial ANOVA**
+The results indicate a negative effect on RT when the parity and response hand are congruent [beta = -0.02, t = -3.10, p = 0.001]. This indicates the standard SNARC effect.
 
-A significant interaction with large effect size indicating a classic SNARC in the exerimental condition where a lawyer is present [f(1,37) = 6.50, p < 0.001, eta^2 = 0.149].
+**Random effects**
+
+Standard deviations for participant intercepts are actually quite high with regard to the fixed effects estimate, suggesting some variability between participants. 
 
 ## Experimental condition - lawyer only - Odd effect error analysis - replication of slide 9
 
@@ -767,7 +787,7 @@ exp_true_ttest <- reshape(exp_true_ttest, idvar = "participant", timevar = "pari
 t.test(exp_true_ttest$RTs.even, exp_true_ttest$RTs.odd, paired = TRUE)
 cohen.d(exp_true_ttest$RTs.even, exp_true_ttest$RTs.odd, paired = TRUE)
 
-"MARC effect 95% CIs and corresponding 2x2 ANOVA)"
+"MARC effect RTs"
 workingdata$parity <- factor(workingdata$parity, levels = c("odd", "even"))
 workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 
@@ -780,12 +800,13 @@ ggplot(workingdata %>%
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   ggtitle("MARC effect RT analysis")
 
-result_MARC <- ezANOVA(workingdata %>%
-                         drop_na() %>%
-                         dplyr::filter(condition == "explie"), dv = RTs, wid = participant, within = .(parity, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
-result_MARC
+MARC <- glmer(RTs ~ parity * response_hand + (1 | participant),
+              family = Gamma(link = "identity"),
+              data = workingdata %>%
+                drop_na() %>%
+                dplyr::filter(condition == "explie"))
 
-eta_sq(result_MARC$aov, partial = TRUE)
+summary(MARC)
 ```
 
 **Left-right line graph**
@@ -796,14 +817,14 @@ No obviously visible relationship between response hand and numbers. Perhaps the
  
 T-test reveals no significant odd effect.
 
-**MARC effect**
+**Fixed effects**
 
-ANOVA reveals non-significant main effects and interactions. Line plot shows that reverse MARC effect could be happening however this is not significant.
+Model reveals no significant interaction
 
 ## Experimental condition - lawyer and cop present - SNARC effect for RTs - replication of slide 12
 
 ```{r, echo=FALSE}
-"SNARC effect  (95% CIs and 2x2 ANOVA)"
+"SNARC effect RTs"
 workingdata$magnitude <- factor(workingdata$magnitude, levels = c("small", "large"))
 workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 
@@ -816,16 +837,16 @@ ggplot(workingdata %>%
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   ggtitle("SNARC effect RT analysis")
 
-result_SNARC <- ezANOVA(workingdata %>%
-                          drop_na() %>%
-                          dplyr::filter(condition == "explie"), dv = RTs, wid = participant, within = .(magnitude, response_hand), type = 3, detailed = TRUE, return_aov = TRUE)
-result_SNARC
+SNARC <- glmer(RTs ~ magnitude * response_hand + (1 | participant),
+              family = Gamma(link = "identity"),
+              data = workingdata %>%
+                drop_na() %>%
+                dplyr::filter(condition == "explie"))
 
-eta_sq(result_SNARC$aov, partial = TRUE)
+summary(SNARC)
 ```
 
-
-**2x2 factorial ANOVA**
+**Fixed effects**
 
 Main effects and interactions remain non-significant. Line plot indicates no real relationship that I can make sense of.
 
