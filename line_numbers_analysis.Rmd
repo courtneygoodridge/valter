@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Decsciption and aim of this markdown
 
-The aim of this markdown is replicate Valter's analysis of SNARC data using the R programming language. R provides a flexible way to analyse and visualise data. The markdown format allows for the analysis code to be separted into specific sections, and saved into a html format. Before I continue into the analysis, I will remind both myself and Valter of the experiment:
+The aim of this markdown is to replicate Valter's analysis of SNARC data using the R programming language. R provides a flexible way to analyse and visualise data. The markdown format allows for the analysis code to be separted into specific sections, and saved into a html format. Before I continue into the analysis, I will remind both myself and Valter of the experiment:
 
 ## Experiment description - the context
 
@@ -220,7 +220,8 @@ ggplot(workingdata %>%
   geom_point() +
   geom_line() +
   scale_x_continuous("Numbers", breaks = seq(0, 9, 1)) +
-  scale_y_continuous("Mean RT (s)", breaks = seq(0, 0.62, 0.02)) +
+  ylim(0, 0.65) +
+  ylab("Mean RTs (s)") +
   ggtitle("RTs for left and right hands across numbers")
 
 "Odd effect (95% CIs and corresponding t-test)"
@@ -256,6 +257,7 @@ ggplot(workingdata %>%
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ylim(0, 0.65) +
   ggtitle("MARC effect RT analysis")
 
 
@@ -310,6 +312,7 @@ ggplot(workingdata %>%
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ylim(0, 0.65) +
   ggtitle("SNARC effect RT analysis")
 
 SNARC <- glmer(RTs ~ magnitude * response_hand + (1 | participant),
@@ -352,7 +355,10 @@ dist <- workingdata %>%
 fit_log  <- fitdist(dist$accuracy, "logis")
 fit_norm <- fitdist(dist$accuracy, "norm")
 
+"logistic"
 fit_log$aic
+
+"normal"
 fit_norm$aic
 ```
 
@@ -371,10 +377,8 @@ ggplot(workingdata %>%
          drop_na() %>%
          dplyr::group_by(parity) %>%
          dplyr::filter(accuracy == 0) %>%
-         dplyr::summarise(errors = n()) %>%
-         summarySE(measurevar = "errors", groupvars = c("parity")), aes(x = parity, y = errors)) + 
+         dplyr::summarise(errors = n()), aes(x = parity, y = errors)) + 
   geom_col() +
-  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .2) +
   ylab("Number of errors") +
   scale_x_discrete("Parity", labels = c("odd" = "Odd", "even" = "Even")) +
   ggtitle("Odd effect - error analysis")
@@ -423,11 +427,9 @@ ggplot(workingdata %>%
          dplyr::group_by(parity, response_hand) %>%
          dplyr::filter(accuracy == 0) %>%
          dplyr::summarise(errors = n()) %>%
-         dplyr::ungroup() %>%
-         summarySE(measurevar = "errors", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = errors)) +
+         dplyr::ungroup(), aes(x = parity, color = response_hand, group = response_hand, y = errors)) +
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
-  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .1) +
   ylim(0, 70) +
   ylab("Number of errors") +
   xlab("Parity") +
@@ -470,11 +472,10 @@ ggplot(workingdata %>%
          dplyr::group_by(magnitude, response_hand) %>%
          dplyr::filter(accuracy == 0) %>%
          dplyr::summarise(errors = n()) %>%
-         dplyr::ungroup() %>%
-         summarySE(measurevar = "errors", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
+         dplyr::ungroup(), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
-  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .1) +
+  ylim(0, 60) +
   ylab("Number of errors") +
   xlab("Magnitude") +
   ggtitle("SNARC effect - error analysis")
@@ -524,7 +525,7 @@ ggplot(data = workingdata %>%
   geom_point() +
   geom_line() +
   scale_x_continuous("Numbers", breaks = seq(0, 9, 1)) +
-  scale_y_continuous("Mean RT (s)", breaks = seq(0, 0.82, 0.02)) +
+  ylim(0, 0.90) +
   ggtitle("RTs for left and right hands across numbers")
 
 "Odd effect (95% CIs and corresponding t-test)"
@@ -536,7 +537,7 @@ ggplot(workingdata %>%
          summarySE(measurevar = "RTs", groupvars = c("parity")), aes(x = parity, y = RTs)) + 
   geom_col() +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .2) +
-  coord_cartesian(ylim = c(0.62, 0.82)) +
+  ylim(0, 0.90) +
   ggtitle("Odd effect RT analysis")
 
 exp_true_ttest <- workingdata %>%
@@ -602,6 +603,7 @@ ggplot(workingdata %>%
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ylim(0, 0.85) +
   ggtitle("SNARC effect RT analysis")
 
 SNARC <- glmer(RTs ~ magnitude * response_hand + (1 | participant),
@@ -630,10 +632,8 @@ ggplot(workingdata %>%
          drop_na() %>%
          dplyr::group_by(parity) %>%
          dplyr::filter(accuracy == 0) %>%
-         dplyr::summarise(errors = n()) %>%
-         summarySE(measurevar = "errors", groupvars = c("parity")), aes(x = parity, y = errors)) + 
+         dplyr::summarise(errors = n()), aes(x = parity, y = errors)) + 
   geom_col() +
-  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .2) +
   ylab("Number of errors") +
   scale_x_discrete("Parity", labels = c("odd" = "Odd", "even" = "Even")) +
   ggtitle("Odd effect - error analysis")
@@ -671,11 +671,10 @@ ggplot(workingdata %>%
          dplyr::group_by(parity, response_hand) %>%
          dplyr::filter(accuracy == 0) %>%
          dplyr::summarise(errors = n()) %>%
-         dplyr::ungroup() %>%
-         summarySE(measurevar = "errors", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = errors)) +
+         dplyr::ungroup(), aes(x = parity, color = response_hand, group = response_hand, y = errors)) +
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
-  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .1) +
+  ylim(0, 200) +
   ylab("Number of errors") +
   xlab("Parity") +
   ggtitle("MARC effect - error analysis")
@@ -714,11 +713,10 @@ ggplot(workingdata %>%
          dplyr::group_by(magnitude, response_hand) %>%
          dplyr::filter(accuracy == 0) %>%
          dplyr::summarise(errors = n()) %>%
-         dplyr::ungroup() %>%
-         summarySE(measurevar = "errors", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
+         dplyr::ungroup(), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
-  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .1) +
+  ylim(0, 180) +
   ylab("Number of errors") +
   xlab("Magnitude") +
   ggtitle("SNARC effect - error analysis")
@@ -762,8 +760,8 @@ ggplot(data = workingdata %>%
          dplyr::summarise(meanRT = mean(RTs)), aes(x = numbers, y = meanRT, col = response_hand)) +
   geom_point() +
   geom_line() +
+  ylim(0, 1) +
   scale_x_continuous("Numbers", breaks = seq(0, 9, 1)) +
-  scale_y_continuous("Mean RT (s)", breaks = seq(0, 0.82, 0.02)) +
   ggtitle("RTs for left and right hands across numbers")
 
 "Odd effect (95% CIs and corresponding t-test)"
@@ -775,7 +773,7 @@ ggplot(workingdata %>%
          summarySE(measurevar = "RTs", groupvars = c("parity")), aes(x = parity, y = RTs)) + 
   geom_col() +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .2) +
-  coord_cartesian(ylim = c(0, 1)) +
+  ylim(0, 1) +
   ggtitle("Odd effect RT analysis")
 
 exp_true_ttest <- workingdata %>%
@@ -798,6 +796,7 @@ ggplot(workingdata %>%
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ylim(0, 1.10) +
   ggtitle("MARC effect RT analysis")
 
 MARC <- glmer(RTs ~ parity * response_hand + (1 | participant),
@@ -835,6 +834,7 @@ ggplot(workingdata %>%
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  ylim(0, 1) +
   ggtitle("SNARC effect RT analysis")
 
 SNARC <- glmer(RTs ~ magnitude * response_hand + (1 | participant),
@@ -859,10 +859,8 @@ ggplot(workingdata %>%
          drop_na() %>%
          dplyr::group_by(parity) %>%
          dplyr::filter(accuracy == 0) %>%
-         dplyr::summarise(errors = n()) %>%
-         summarySE(measurevar = "errors", groupvars = c("parity")), aes(x = parity, y = errors)) + 
+         dplyr::summarise(errors = n()), aes(x = parity, y = errors)) + 
   geom_col() +
-  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .2) +
   ylab("Number of errors") +
   scale_x_discrete("Parity", labels = c("odd" = "Odd", "even" = "Even")) +
   ggtitle("Odd effect - error analysis")
@@ -899,12 +897,9 @@ ggplot(workingdata %>%
          drop_na() %>%
          dplyr::group_by(parity, response_hand) %>%
          dplyr::filter(accuracy == 0) %>%
-         dplyr::summarise(errors = n()) %>%
-         dplyr::ungroup() %>%
-         summarySE(measurevar = "errors", groupvars = c("parity", "response_hand")), aes(x = parity, color = response_hand, group = response_hand, y = errors)) +
+         dplyr::summarise(errors = n()), aes(x = parity, color = response_hand, group = response_hand, y = errors)) +
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
-  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .1) +
   ylim(0, 250) +
   ylab("Number of errors") +
   xlab("Parity") +
@@ -948,11 +943,9 @@ ggplot(workingdata %>%
          dplyr::group_by(magnitude, response_hand) %>%
          dplyr::filter(accuracy == 0) %>%
          dplyr::summarise(errors = n()) %>%
-         dplyr::ungroup() %>%
-         summarySE(measurevar = "errors", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
+         dplyr::ungroup(), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
-  geom_errorbar(aes(ymin = errors - ci, ymax = errors + ci), width = .1) +
   ylim(0, 250) +
   ylab("Number of errors") +
   xlab("Magnitude") +
