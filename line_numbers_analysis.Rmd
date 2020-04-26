@@ -286,7 +286,7 @@ Appears to the show a fairly strong parity x hand interaction - RTs are faster w
 
 **Consideration - ANOVA versus GLM** 
 
-A standard ANOVA assumes a normal distribution, however RTs rarely follow a normal distribution. GLMs often provide more statistical power when analysing RT data because you can specify an error distribution that fits your data better (such as Gamma or Inverse-Gaussian). This paper details differences in analysing RT data between linear and generalised linear *mixed effects* model however I think the same applies when not specifying mixed effects (https://www.frontiersin.org/articles/10.3389/fpsyg.2015.01171/full)
+A standard ANOVA assumes a normal distribution, however RTs rarely follow a normal distribution. GLMs often provide more statistical power when analysing RT data because you can specify an error distribution that fits your data better (such as Gamma or Inverse-Gaussian for RT data). This paper details differences in analysing RT data between linear and generalised linear *mixed effects* model however I think the same applies when not specifying mixed effects (https://www.frontiersin.org/articles/10.3389/fpsyg.2015.01171/full). You also might want to think about implementing mixed effects in your analysis - you have a repeated measures design and subjects might be more variable in some of the experimental conditions, which a mixed effects model can account for. 
 
 ## Control condition -  lawyer only - SNARC effect for RTs (replication of slide 4)
 
@@ -328,9 +328,9 @@ This indicates a classic SNARC in the only lawyer control condition (i.e. when r
 
 For the odd effect error analyses, I do a slightly different analysis to what you did. For investigating errors in the control condition, I utilise a generalised linear mixed effects model - specifically, a logistic mixed effect regression. I do this for the following reasons:
 
-1) Accuracy data is binomial data. This means it is a dichotomous dependent variable that exists in one of two states - correct or incorrect. This violates the assumptions of a standard ANOVA, thus we can model the data better if we specify the correct error distribution. 
+1) Accuracy data is binomial. This means it is a dichotomous dependent variable that exists in one of two states - correct or incorrect. This violates the assumptions of a standard ANOVA, thus we can model the data better if we specify the correct error distribution. 
 
-2) When you have a dichotomous dependent variable, it is desirable to have a model and that predicts whether a value is 0 or 1. A linear regression (essentially a standard ANOVA) does not allow you to do this because the predicted y variable may not be restricted to a value between 0 and 1. Conversely, a logistic model can produce a probability score or the probability of the of the occurence of the event. 
+2) When you have a dichotomous dependent variable, it is desirable to have a model and that predicts whether a value is 0 or 1. A linear regression (essentially a standard ANOVA) does not allow you to do this because the predicted y variable may not be restricted to a value between 0 and 1. Conversely, a logistic model can produce the odds of the occurence of an event. 
 
 3) The experimental design was repeated measures, which allows for the inclusion of participants as a random effect in a multi-level model. This means we can model an between participant variability in RT and thus capture more unexplained variance. Again, this will provide more statistical power. 
 
@@ -393,13 +393,13 @@ When performing logistic regressions, coefficients can be hard to interpret due 
 
 **Interpretation of our results**
 
-*Fixed effects and odds ratio*
+**Fixed effects odds ratio**
 
 The fixed effects coefficient for even numbers is 0.51 corresponds to the log of odds ratio between even and odd numbers. This coefficient is hard to interpret, thus we exponentiate it. This reveals an odds ratio of 1.66 which means the odds of an accurate response are 1.66:1, or 66% higher for even numbers than for odd numbers.
 
-*Random effects*
+**Random effects**
 
-The standard deviation of the random effects is quite high in relation to the the estimate. This suggests some substantial variability between partipants in reaction time. 
+The standard deviation of the random effects is quite high in relation to the the estimate. This suggests some substantial variability between partipants in reaction time. This also supports our rationale 
 
 ##  Control condition - lawyer only - MARC effect error analysis - replication of slide 5
 
@@ -437,11 +437,16 @@ exp(fixef(MARCeffect_model))
 exp(confint(MARCeffect_model))
 ```
 
-**Error analysis of the MARC effect**
+**Fixed effects**
 
-The fixed effects coefficient for the interaction (*response_handright:parityeven*) is -0.76 which corresponds to the log of odds ratio between congruent and incongruent response hand/parity pairs.  We exponentiate it to reveal an odds ratio of 0.46 which means the odds of an accurate response are 0.46:1, or 54% lower when response hand and parity are congruent. Hence this highlights an inversed MARC effect.
+The fixed effects coefficient for the interaction (*response_handright:parityeven*) is -0.76 which corresponds to the log of odds ratio between congruent and incongruent response hand/parity pairs.  We exponentiate it to reveal an odds ratio of 0.46 which means the odds of 
+an accurate response are 0.46:1, or 54% lower when response hand and parity are congruent. Hence this highlights an inversed MARC effect.
 
 The line plot visualises this interaction. However the plot also reveals something else - this interaction appears to be driven by responding with the left hand. The number of errors with the right hand is consistent whether repsonding to even or odd numbers. However the difference for the left hand is much bigger.
+
+**Random effects**
+
+Once again the standard deviation of the random intercepts shows variability between subjects (SD = 0.38).
 
 ##  Control condition - lawyer only - SNARC effect error analysis - replication of slide 5
 
@@ -478,11 +483,15 @@ exp(fixef(SNARCeffect_model))
 exp(confint(SNARCeffect_model))
 ```
 
-**Error analysis of the SNARC effect**
+**Fixed effects**
 
 The fixed effects coefficient for the interaction (*response_handright:magnitudelarge*) is -0.94 which corresponds to the log of odds ratio between congruent and incongruent response hand/magnitude pairs. We exponentiate it to reveal an odds ratio of 0.39 which means the odds of an accurate response are 0.39:1, or 61% lower when the response hand and parity are congruent. This highlights an inversed SNARC.
 
 I implement a line plot to visualise the significant interaction. The line plot visualises this interaction. As highlighted by the logistic regression model, accuracy is higher for left + small pairs and right + large pairs. This is the opposite of the traditional SNARC effect.
+
+**Random effects**
+
+Once again the standard deviation of the random intercepts shows variability between subjects (SD = 0.38).
 
 ## Overview of the analysis and results of the control condition
 
@@ -557,11 +566,11 @@ As per the lawyer control condition, we see faster RTs when parity and response 
 
 **Odd effect**
  
-T-test reveales significant odd effect - faster reaction times for even numbers, however the effect size is small.
+T-test reveals significant odd effect - faster reaction times for even numbers [t(37 = -3.30), p = 0.002], however the effect size is small (-0.39).
  
 **MARC effect**
 
-ANOVA reveals significant interaction between parity and hand responded with, alongside a large effect size indicating a MARC effect (however I would still consider a GLM due to distribution of RT data). 
+ANOVA reveals significant interaction between parity and hand responded with, alongside a large effect size indicating a MARC effect [f(1, 37 = 5.38, p < 0.001, eta^2 = 0.127)].
 
 ## Experimental condition - lawyer only - SNARC effect for RTs - replication of slide 8
 
@@ -590,7 +599,7 @@ eta_sq(result_SNARC$aov, partial = TRUE)
 
 **2x2 factorial ANOVA**
 
-A significant interaction with large effect size indicating a classic SNARC in the exerimental condition where a lawyer is present. When responding to larger numbers with right hard, RTs are faster. When responding to small numbers with left hand, RTs are faster). 
+A significant interaction with large effect size indicating a classic SNARC in the exerimental condition where a lawyer is present [f(1,37) = 6.50, p < 0.001, eta^2 = 0.149].
 
 ## Experimental condition - lawyer only - Odd effect error analysis - replication of slide 9
 
@@ -621,11 +630,11 @@ exp(fixef(oddeffect_model))
 exp(confint(oddeffect_model))
 ```
 
-*Fixed effects*
+**Fixed effects**
 
 The fixed effects coefficient for even numbers is 0.27 which corresponds to the log of odds ratio between even and odd numbers. We exponentiate it revealing an odds ratio of 1.31 which means the odds of an accurate response are 1.31:1, or 31% higher for even numbers.
 
-*Random effects*
+**Random effects**
 
 The standard deviation of the random effects is quite high in relation to the the estimate (SD = 0.72). This suggests some substantial variability between partipants in accuracy.
 
@@ -664,9 +673,13 @@ exp(fixef(MARCeffect_model))
 exp(confint(MARCeffect_model))
 ```
 
-**Error analysis of the MARC effect**
+**Fixed effects**
 
 The fixed effects coefficient for the interaction (*response_handright:parityeven*) is -0.58 which corresponds to the log of odds ratio between congruent versus incongruent response hand/parity pairs.  We exponentiate it to reveal an odds ratio of 0.55 which means the odds of an accurate response are 0.55:1, or 45% lower when response hand and parity are congruent. Hence this highlights an inversed SNARC.
+
+**Random effects**
+
+Random effects highlight substantial variation in errors between participants for this condition (SD = 0.716).
 
 ## Experimental condition - lawyer only - SNARC effect error analysis - replication of slide 9
 
@@ -703,9 +716,16 @@ exp(fixef(SNARCeffect_model))
 exp(confint(SNARCeffect_model))
 ```
 
+**Fixed effects**
+
 The fixed effects coefficient for the interaction (*response_handright:magnitudelarge*) is -0.54 which corresponds to the log of odds ratio between congruent versus incongruent response hand/magnitude pairs.  We exponentiate it to reveal an odds ratio of 0.57 which means the odds of an accurate response are 0.57:1, or 43% lower when response hand and parity are congruent. Hence this highlights an inversed SNARC.
 
 The line plot visualises this interaction. Accuracy is reduced for left + small pairs and right + large pairs. This is the opposite of the traditional SNARC effect.
+
+
+**Random effects**
+
+Again, substantial variation between subjects in the errors made (SD = 0.719)
 
 ## Overview of experimental condition (lawyer only)
 
@@ -838,10 +858,11 @@ exp(fixef(oddeffect_model))
 exp(confint(oddeffect_model))
 ```
 
-*Odd ratio*
+**Fixed effects**
 
 The fixed effects coefficient for even numbers is 0.10 corresponds to the log of odds ratio between even and odd numbers. Exponentiating reveals an odds ratio of 1.11 which means the odds of an accurate response are 1.1:1, or 11% higher for even numbers. This is not a particular big increase in the odds of an accurate response, which supports the non-significant result.
-*Random effects*
+
+**Random effects**
 
 The standard deviation of the random effects is once again quite high in relation to the the estimate (SD = 0.67) suggesting substantial variability between partipants in accuracy.
 
@@ -881,11 +902,15 @@ exp(fixef(MARCeffect_model))
 exp(confint(MARCeffect_model))
 ```
 
-**Error analysis of the MARC effect**
+**Fixed effects**
 
 After exponentiating the log of odds estimate, the odds of an accurate response when the response hand and parity are congruent (*response_handright:parityeven* object) is 0.76:1, or 24% lower odds. This highlights smaller amount of evidence for an inverse MARC effect but misses out on being significant.
  
 Line plot visualises the small amount of evidence for an interaction with an inverse MARC effect.
+
+**Random effects**
+
+Substantial variation between participants according to the standard deviation (SD = 0.67).
 
 This finding is important, because a 2x2 ANOVA reveals a significant effect, however I do not believe it is the appropriate analysis. Also the logistc regression gives a more valid interpretation of the interaction. Rather than just saying "no interaction", it suggests that the odds of an accurate response do differ somewhat, but not a lot. This is something to think about. 
 
@@ -925,6 +950,12 @@ exp(fixef(SNARCeffect_model))
 exp(confint(SNARCeffect_model))
 ```
 
+**Fixed effect**
+
 The fixed effects coefficient for the interaction (*response_handright:magnitudelarge*) is 0.05 which corresponds to the log of odds ratio between congruent versus incongruent response hand/magnitude pairs.  We exponentiate it to reveal an odds ratio of 1.05 which means the odds of an accurate response are 1.05:1, or 5% higher when response hand and parity are congruent. This highlights the insigificant effect of the interaction.
 
 The line plot visualises an interaction which might suggest there is an inverse SNARC effect, however the interaction is very small.
+
+**Random effects**
+
+Substantial variation between subjects according the standard deviations of the intercepts.
