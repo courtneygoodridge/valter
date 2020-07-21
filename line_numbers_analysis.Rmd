@@ -396,9 +396,9 @@ exp(confint(oddeffect_model))
 ```
 
 **Coefficients versus odds ratio**
-When performing logistic regressions, coefficients can be hard to interpret due to the dichotamous nature of the data. If we exponentiate the coefficient, we get the odds-ratio.
+When performing logistic regressions, coefficients can be hard to interpret due to the dichotomous nature of the data. If we exponentiate the coefficient, we get the odds-ratio.
 
-- If an odds ratio is 1, both outcomes have an equal chance of occuring. For example if the odd ratio was 1, accurate and error responses would be equally as likely when responding with the left and right hand. 
+- If an odds ratio is 1, both outcomes have an equal chance of occurring. For example if the odd ratio was 1, accurate and error responses would be equally as likely when responding with the left and right hand. 
 
 - If an odds ratio is below 1, then a particular level of parity would decrease the chance of an accurate result. For example, an odds ratio of 0.5 would mean a level of parity has odds of 1:2, or a accurate result for every two errors.
 
