@@ -389,6 +389,8 @@ oddeffect_model <- glmer(accuracy ~ parity + (1 | participant),
                drop_na(),
              family = binomial(link = "logit"))
 
+report(oddeffect_model)
+
 summary(oddeffect_model)
 
 exp(fixef(oddeffect_model))
