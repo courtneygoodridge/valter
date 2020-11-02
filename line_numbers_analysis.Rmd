@@ -27,7 +27,7 @@ In the lie condition, sometimes the picture is the lawyer and other times it is 
 
 SNARC effect - Spatial-Numerical Association of Codes effect proposes faster reaction times to small/large numbers on the left/right hand side.
 
-MARC effect - Markedness of Response Codes effect proposes faster reaciton times for left/right hand side repsonses to odd/even numbers
+MARC effect - Markedness of Response Codes effect proposes faster reaciton times for left/right hand side responses to odd/even numbers
 
 Odd effect - faster reaction times to even numbers, slower reaction times for odd numbers. 
 
@@ -71,6 +71,7 @@ library(lme4) # for linear mixed effects modelling
 library(lmtest) # testing linear regression models
 library(fitdistrplus) # distribution fits
 library(ez) # repeated measures ANOVA 
+library(report)
 ```
 
 ## Loading data
@@ -322,6 +323,8 @@ SNARC <- glmer(RTs ~ magnitude * response_hand + (1 | participant),
                 dplyr::filter(condition == "controltrue"))
 
 summary(SNARC)
+
+report(SNARC)
 ```
 
 Firstly I make dataframes *small* and *large* in order to compute a new variable called magnitude. This will be used (alongside hand) to analyse the SNARC effect
@@ -342,11 +345,93 @@ For the odd effect error analyses, I do a slightly different analysis to what yo
 
 1) Accuracy data is binomial. This means it is a dichotomous dependent variable that exists in one of two states - correct or incorrect. This violates the assumptions of a standard ANOVA, thus we can model the data better if we specify the correct error distribution. 
 
-2) When you have a dichotomous dependent variable, it is desirable to have a model and that predicts whether a value is 0 or 1. A linear regression (essentially a standard ANOVA) does not allow you to do this because the predicted y variable may not be restricted to a value between 0 and 1. Conversely, a logistic model can produce the odds of the occurence of an event. 
+2) When you have a dichotomous dependent variable, it is desirable to have a model and that predicts whether a value is 0 or 1. A linear regression (essentially a standard ANOVA) does not allow you to do this because the predicted y variable may not be restricted to a value between 0 and 1. Conversely, a logistic model can produce the odds of the occurrence of an event. 
 
 3) The experimental design was repeated measures, which allows for the inclusion of participants as a random effect in a multi-level model. This means we can model an between participant variability in RT and thus capture more unexplained variance. Again, this will provide more statistical power. 
 
 Below, I fit the 2 distributions to the data to demonstrate why a logistic regression is more appropriate than an ANOVA
+
+## computing inverse efficiency scores
+
+```{r}
+correct_response_rates <- workingdata %>%
+  dplyr::filter(condition == "controltrue") %>%
+  dplyr::group_by(participant, response_hand, magnitude, accuracy) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(n_total = sum(n)) %>%
+  dplyr::filter(accuracy == 1) %>%
+  dplyr::mutate(correct_RR = n / n_total)
+
+correct_RTs <- workingdata %>%
+  dplyr::filter(condition == "controltrue") %>%
+  dplyr::filter(accuracy == 1) %>%
+  dplyr::group_by(participant, response_hand, magnitude) %>%
+  dplyr::summarise(meanRT = mean(RTs)) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(meanRT)
+
+controltrue_dat <- cbind(correct_response_rates, correct_RTs)
+
+controltrue_dat <- controltrue_dat %>%
+  dplyr::group_by(participant) %>%
+  dplyr::mutate(IES = meanRT / correct_RR)
+  
+ggplot(controltrue_dat, aes(x = correct_RR, y = meanRT)) +
+  geom_point() +
+  ylim(0, 1.5)
+
+"ANOVA on IES metric for SNARC effect"
+result_IES <- ezANOVA(controltrue_dat, dv = IES, wid = participant, within = .(response_hand, magnitude), type = 3, detailed = TRUE, return_aov = TRUE)
+
+result_IES
+
+ggplot(controltrue_dat %>%
+         summarySE(measurevar = "IES", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = IES)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  geom_errorbar(aes(ymin = IES - ci, ymax = IES + ci), width = .1)
+
+ggplot(workingdata %>%
+         drop_na() %>%
+         dplyr::filter(condition == "controltrue") %>%
+         summarySE(measurevar = "RTs", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = RTs)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  #ylim(0, 0.65) +
+  ggtitle("SNARC effect RT analysis")
+
+ggplot(workingdata %>%
+         dplyr::filter(condition == "controltrue") %>%
+         drop_na() %>%
+         dplyr::group_by(magnitude, response_hand) %>%
+         dplyr::filter(accuracy == 0) %>%
+         dplyr::summarise(errors = n()) %>%
+         dplyr::ungroup(), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  #ylim(0, 60) +
+  ylab("Number of errors") +
+  xlab("Magnitude") +
+  ggtitle("SNARC effect - error analysis")
+
+"ANOVA on RT for SNARC effect"
+result_RT <- ezANOVA(workingdata %>%
+                       dplyr::filter(condition == "controltrue") %>%
+                       dplyr::filter(accuracy == 1), dv = RTs, wid = participant, within = .(response_hand, magnitude), type = 3, detailed = TRUE, return_aov = TRUE)
+
+result_RT
+
+"ANOVA on errors for SNARC effect"
+result_errors <- ezANOVA(workingdata %>%
+                           dplyr::filter(condition == "controltrue") %>%
+                           dplyr::filter(accuracy == 1) %>%
+                           dplyr::group_by(participant, response_hand, magnitude) %>%
+                           dplyr::summarise(errors = n()) %>%
+                           drop_na, dv = errors, wid = participant, within = .(response_hand, magnitude), type = 3, detailed = TRUE, return_aov = TRUE)
+
+result_errors
+```
 
 ```{r, echo=FALSE}
 dist <- workingdata %>%
@@ -490,6 +575,8 @@ SNARCeffect_model <- glmer(accuracy ~ response_hand * magnitude + (1 | participa
              family = binomial(link = "logit"))
 
 summary(SNARCeffect_model)
+
+report(SNARCeffect_model)
 
 exp(fixef(SNARCeffect_model))
 exp(confint(SNARCeffect_model))
