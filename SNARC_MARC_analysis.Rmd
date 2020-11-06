@@ -86,7 +86,7 @@ workingdata$magnitude <- factor(workingdata$magnitude, levels = c("small", "larg
 workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left", "right"))
 ```
 
-## Lawyer only - generic SNARC effect
+## Control condition - SNARC effect 
 
 ```{r}
 controltrue <- workingdata %>%
@@ -123,12 +123,10 @@ ggplot(IES_data, aes(x = correct_RR, y = meanRT)) +
   ylim(0.25, 1.2) +
   ylab("mean RT (s)") +
   xlab("Proportion of correct responses (%)") +
-  facet_wrap(~ response_hand_magnitude) +
+  ggtitle("D") +
   theme_plot +
   theme(legend.position = c(0.50, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
-  ggsave('RT_PC_relationship.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
-  
-  
+  ggsave('RT_PC_relationship_control.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
 
 "plotting SNARC effect on RT"
 setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter")
@@ -144,7 +142,7 @@ ggplot(controltrue %>%
   ggtitle("A") +
   theme_plot +
   theme(legend.position = c(0.50, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
-  ggsave('SNARC_RT.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
+  ggsave('SNARC_RT_control.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
 
 "plotting SNARC effect on errors"
 setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter")
@@ -163,7 +161,7 @@ ggplot(controltrue %>%
   ggtitle("B") +
   theme_plot +
   theme(legend.position = c(0.55, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
-  ggsave('SNARC_errors.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
+  ggsave('SNARC_errors_control.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
 
 "plotting IES"
 setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter")
@@ -178,10 +176,203 @@ ggplot(IES_data %>%
   ggtitle("C") +
   theme_plot +
   theme(legend.position = c(0.55, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
-  ggsave('SNARC_IES.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
-
-
-
-
+  ggsave('SNARC_IES_control.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
 
 ```
+
+Above I calculate plot to highlight the speed accuracy trade off between RT and errors. This is for the condition where we are just investigating the general SNARC i.e. participant is not influenced by cop or lawyer here. We see general SNARC effect for RTs but an opposite SNARC for errors, suggesting their is a speed accuracy trade-off within these data.
+
+I also compute IES values for the data and investigate correlations between errors and RTs. Because there is an actual speed-accuracy trade off and my data is strongly correlated, the IES measure is not one that should be used. 
+
+## Experimental condition (lie condition) - SNARC effect
+
+```{r}
+explie <- workingdata %>%
+  dplyr::filter(condition == "explie")
+
+"response rates"
+correct_response_rates <- explie %>%
+  dplyr::group_by(participant, response_hand, magnitude, accuracy) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(n_total = sum(n)) %>%
+  dplyr::filter(accuracy == 1) %>%
+  dplyr::mutate(correct_RR = n / n_total)
+
+"correct RTs"
+correct_RTs <- explie %>%
+  dplyr::filter(accuracy == 1) %>%
+  dplyr::group_by(participant, response_hand, magnitude) %>%
+  dplyr::summarise(meanRT = mean(RTs)) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(meanRT)
+
+"calcuating IES"
+IES_data <- cbind(correct_response_rates, correct_RTs)
+
+IES_data <- IES_data %>%
+  dplyr::group_by(participant) %>%
+  dplyr::mutate(IES = meanRT / correct_RR)
+
+"relationship between mean RT and proportion of correct responses"
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter")
+ggplot(IES_data, aes(x = correct_RR, y = meanRT)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ylim(0.25, 1.2) +
+  ylab("mean RT (s)") +
+  xlab("Proportion of correct responses (%)") +
+  ggtitle("D") +
+  theme_plot +
+  theme(legend.position = c(0.50, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
+  ggsave('RT_PC_relationship_police.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
+
+"plotting SNARC effect on RT"
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter")
+ggplot(explie %>%
+         tidyr::drop_na() %>%
+         summarySE(measurevar = "RTs", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = RTs)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) + 
+  ylab("RT (s)") +
+  xlab("Number magnitude") +
+  ggtitle("A") +
+  theme_plot +
+  theme(legend.position = c(0.50, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
+  ggsave('SNARC_RT_police.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
+
+"plotting SNARC effect on errors"
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter")
+ggplot(explie %>%
+         tidyr::drop_na() %>%
+         dplyr::group_by(magnitude, response_hand) %>%
+         dplyr::filter(accuracy == 0) %>%
+         dplyr::summarise(errors = n()) %>%
+         dplyr::ungroup() %>%
+         summarySE(measurevar = "errors", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) +
+  ylab("Number of errors") +
+  xlab("Number magnitude") +
+  ggtitle("B") +
+  theme_plot +
+  theme(legend.position = c(0.55, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
+  ggsave('SNARC_errors_police.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
+
+"plotting IES"
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter")
+ggplot(IES_data %>%
+         summarySE(measurevar = "IES", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = IES)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) +
+  geom_errorbar(aes(ymin = IES - ci, ymax = IES + ci), width = .1) +
+  ylab("IES (s/PC%)") +
+  xlab("Number magnitude") +
+  ggtitle("C") +
+  theme_plot +
+  theme(legend.position = c(0.55, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
+  ggsave('SNARC_IES_police.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
+
+cor.test(IES_data$correct_RR, IES_data$meanRT)
+```
+
+In this condition, participant is shown a picture of a police officer. This means they have to lie i.e. respond with the opposite key. For example, if they shown a large number in this condition, they have to respond with their left hand. The results from the control condition are mirrored here with a standard SNARC effect for RTs but an inverse-SNARC for errors. This suggests a speed accuracy trade-off. 
+
+## Experimental condition (truth condition) - SNARC effect
+
+```{r}
+exptrue <- workingdata %>%
+  dplyr::filter(condition == "exptrue")
+
+"response rates"
+correct_response_rates <- exptrue %>%
+  dplyr::group_by(participant, response_hand, magnitude, accuracy) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(n_total = sum(n)) %>%
+  dplyr::filter(accuracy == 1) %>%
+  dplyr::mutate(correct_RR = n / n_total)
+
+"correct RTs"
+correct_RTs <- exptrue %>%
+  dplyr::filter(accuracy == 1) %>%
+  dplyr::group_by(participant, response_hand, magnitude) %>%
+  dplyr::summarise(meanRT = mean(RTs)) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(meanRT)
+
+"calcuating IES"
+IES_data <- cbind(correct_response_rates, correct_RTs)
+
+IES_data <- IES_data %>%
+  dplyr::group_by(participant) %>%
+  dplyr::mutate(IES = meanRT / correct_RR)
+
+"relationship between mean RT and proportion of correct responses"
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter")
+ggplot(IES_data, aes(x = correct_RR, y = meanRT)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ylim(0.25, 1.2) +
+  ylab("mean RT (s)") +
+  xlab("Proportion of correct responses (%)") +
+  ggtitle("D") +
+  theme_plot +
+  theme(legend.position = c(0.50, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
+  ggsave('RT_PC_relationship_lawyer.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
+
+"plotting SNARC effect on RT"
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter")
+ggplot(exptrue %>%
+         tidyr::drop_na() %>%
+         summarySE(measurevar = "RTs", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = RTs)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
+  scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) + 
+  ylab("RT (s)") +
+  xlab("Number magnitude") +
+  ggtitle("A") +
+  theme_plot +
+  theme(legend.position = c(0.50, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
+  ggsave('SNARC_RT_lawyer.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
+
+"plotting SNARC effect on errors"
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter")
+ggplot(exptrue %>%
+         tidyr::drop_na() %>%
+         dplyr::group_by(magnitude, response_hand) %>%
+         dplyr::filter(accuracy == 0) %>%
+         dplyr::summarise(errors = n()) %>%
+         dplyr::ungroup() %>%
+         summarySE(measurevar = "errors", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) +
+  ylab("Number of errors") +
+  xlab("Number magnitude") +
+  ggtitle("B") +
+  theme_plot +
+  theme(legend.position = c(0.55, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
+  ggsave('SNARC_errors_lawyer.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
+
+"plotting IES"
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter")
+ggplot(IES_data %>%
+         summarySE(measurevar = "IES", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = IES)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) +
+  geom_errorbar(aes(ymin = IES - ci, ymax = IES + ci), width = .1) +
+  ylab("IES (s/PC%)") +
+  xlab("Number magnitude") +
+  ggtitle("C") +
+  theme_plot +
+  theme(legend.position = c(0.55, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8)) +
+  ggsave('SNARC_IES_lawyer.bmp', plot = last_plot(), width = 10, height = 7, units = 'cm', dpi = 300)
+
+```
+
+In this condition, participant is shown a picture of a lawyer. This means they have to tell the truth. This is essentially a standard SNARC task but within the conext of being court. As might be expected, the results from the control condition are mirrored here with a standard SNARC effect for RTs but an inverse-SNARC for errors. This suggests a speed accuracy trade-off. 
