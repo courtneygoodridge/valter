@@ -1,0 +1,111 @@
+---
+title: "Dots SNARC"
+author: "Courtney Goodridge"
+date: "26/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load packages
+
+```{r}
+# rm(list = ls())
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(Rmisc)
+library(lme4)
+```
+
+## Theme plot
+
+```{r}
+theme_plot <-   theme(axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 12), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 12), title = element_text(size = 12), legend.title = element_text(size = 15), legend.text = element_text(size = 15), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+
+## Load data
+
+```{r}
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/Dots control condition")
+temp = list.files(pattern = c("ppt")) # list all CSV files in the directory
+myfiles = lapply(temp, read.csv) # read these CSV in the directory
+dat <- do.call(rbind.data.frame, myfiles) # convert and combine the CSV files into dataframe
+
+"Converting keys, accuracy and RTs into long format"
+dat.long <- dat %>%
+  dplyr::select(pics, participant, key_resp_2.keys, key_resp_2.corr, key_resp_2.rt, key_resp_4.keys, key_resp_4.corr, key_resp_4.rt, key_resp_6.keys, key_resp_6.corr, key_resp_6.rt, key_resp_8.keys, key_resp_8.corr, key_resp_8.rt) %>%
+  dplyr::mutate_at(vars(key_resp_2.corr, key_resp_2.rt, key_resp_4.corr, key_resp_4.rt, key_resp_6.corr, key_resp_6.rt, key_resp_8.corr, key_resp_8.rt), list(factor)) %>%
+  tidyr::pivot_longer(cols = c("key_resp_2.corr", "key_resp_4.corr", "key_resp_6.corr", "key_resp_8.corr"), names_to = "response_acc", values_to = "accuracy") %>%
+  tidyr::pivot_longer(cols = c("key_resp_2.rt", "key_resp_4.rt", "key_resp_6.rt", "key_resp_8.rt"), names_to = "response_rt", values_to = "RT") %>%
+  tidyr::pivot_longer(cols = c("key_resp_2.keys", "key_resp_4.keys", "key_resp_6.keys", "key_resp_8.keys"), names_to = "response_keys", values_to = "keys") %>%
+  dplyr::mutate(dot_number = case_when(pics == "snarc1.jpg" ~ 1,
+                                       pics == "snarc2.jpg" ~ 2,
+                                       pics == "snarc3.jpg" ~ 3,
+                                       pics == "snarc4.jpg" ~ 4,
+                                       pics == "snarc6.jpg" ~ 6,
+                                       pics == "snarc7.jpg" ~ 7,
+                                       pics == "snarc8.jpg" ~ 8,
+                                       pics == "snarc9.jpg" ~ 9)) %>%
+  dplyr::mutate(magnitude = case_when(dot_number > 5 ~ "large",
+                                    dot_number < 5 ~ "small")) %>%
+  tidyr::drop_na() %>%
+  dplyr::mutate(trialid = paste(participant, RT, dot_number, sep = "_")) %>%
+  dplyr::arrange(trialid, desc(keys)) %>%
+  dplyr::group_by(trialid) %>%
+  dplyr::slice(1) %>%
+  dplyr::mutate(hand = case_when(keys == "a" ~ "left",
+                                 keys == "l" ~ "right")) %>%
+  dplyr::mutate_at(vars(accuracy, RT, dot_number), list(as.character)) %>%
+  dplyr::mutate_at(vars(accuracy, RT, dot_number), list(as.numeric)) %>%
+  dplyr::ungroup()
+
+dat.long$hand = factor(dat.long$hand, levels = c("left", "right"))
+dat.long$magnitude = factor(dat.long$magnitude, levels = c("small", "large"))
+
+"tagging outliers"
+dat.long <- dat.long %>%
+  dplyr::mutate(sd_rt = sd(RT)) %>%
+  dplyr::mutate(upper_rt = mean(RT) + (2.5 * sd_rt)) %>%
+  dplyr::mutate(lower_rt = mean(RT) - (2.5 * sd_rt)) %>%
+  dplyr::mutate(outlier = case_when(RT > upper_rt | RT < lower_rt ~ TRUE,
+                                    RT < upper_rt | RT > lower_rt ~ FALSE))
+
+"RT SNARC effect"
+plot.1 <- ggplot(dat.long %>%
+         dplyr::filter(outlier == FALSE) %>%
+         summarySE(measurevar = "RT", groupvars = c("magnitude", "hand")), aes(x = magnitude, color = hand, group = hand, y = RT)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  geom_errorbar(aes(ymin = RT - ci, ymax = RT + ci), width = .1) +
+  scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) + 
+  ylab("RT (s)") +
+  xlab("Number magnitude") +
+  ggtitle("A: outliers removed") +
+  theme_plot +
+  theme(legend.position = c(0.40, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 15, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8))
+
+"Accuracy SNARC effect"
+plot.2 <- ggplot(dat.long %>%
+         dplyr::filter(outlier == FALSE) %>%
+         dplyr::group_by(magnitude, hand) %>%
+         dplyr::filter(accuracy == 0) %>%
+         dplyr::summarise(errors = n()) %>%
+         dplyr::ungroup() %>%
+         summarySE(measurevar = "errors", groupvars = c("magnitude", "hand")), aes(x = magnitude, color = hand, group = hand, y = errors)) +
+         stat_summary(fun = mean, geom = "point") +
+         stat_summary(fun = mean, geom = "line") +
+  scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) +
+  ylab("Number of errors") +
+  xlab("Number magnitude") +
+  ggtitle("B: outliers removed") +
+  theme_plot +
+  theme(legend.position = "none", legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 15, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8))
+
+setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/plots")
+g <- arrangeGrob(plot.1, plot.2, nrow = 1)
+  ggsave('SNARC_dots_outliers_removed.png', g,  width = 14, height = 7, units = 'cm', dpi = 300, type = 'cairo')
+```

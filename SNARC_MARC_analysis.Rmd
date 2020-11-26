@@ -94,26 +94,37 @@ workingdata$response_hand <- factor(workingdata$response_hand, levels = c("left"
 controltrue <- workingdata %>%
   dplyr::filter(condition == "controltrue")
 
+"categorising outliers"
+controltrue <- controltrue %>% 
+  tidyr::drop_na() %>%
+  dplyr::mutate(sd_rt = sd(RTs)) %>%
+  dplyr::mutate(upper_rt = mean(RTs) + (2.5 * sd_rt)) %>%
+  dplyr::mutate(lower_rt = mean(RTs) - (2.5 * sd_rt)) %>%
+  dplyr::mutate(outlier = case_when(RTs > upper_rt | RTs < lower_rt ~ TRUE,
+                                    RTs < upper_rt | RTs > lower_rt ~ FALSE))
+
 controltrue$response_hand = factor(controltrue$response_hand, levels = c("left", "right"))
 controltrue$magnitude = factor(controltrue$magnitude, levels = c("small", "large"))
 
 "plotting SNARC effect on RT"
 SNARC.rt <- ggplot(controltrue %>%
-         tidyr::drop_na() %>%
-         summarySE(measurevar = "RTs", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = RTs)) +
-         stat_summary(fun = mean, geom = "point") +
-         stat_summary(fun = mean, geom = "line") +
+                     tidyr::drop_na() %>%
+                     dplyr::filter(outlier == FALSE) %>%
+                     summarySE(measurevar = "RTs", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = RTs)) +
+  stat_summary(fun = mean, geom = "point") +
+  stat_summary(fun = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) + 
   ylab("RT (s)") +
   xlab("Number magnitude") +
-  ggtitle("A") +
+  ggtitle("A: outliers removed") +
   theme_plot +
-  theme(legend.position = c(0.40, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8))
+  theme(legend.position = c(0.40, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 15, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8))
 
 "plotting SNARC effect on errors"
 SNARC.error <- ggplot(controltrue %>%
          tidyr::drop_na() %>%
+           dplyr::filter(outlier == FALSE) %>%
          dplyr::group_by(magnitude, response_hand) %>%
          dplyr::filter(accuracy == 0) %>%
          dplyr::summarise(errors = n()) %>%
@@ -124,17 +135,16 @@ SNARC.error <- ggplot(controltrue %>%
   scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) +
   ylab("Number of errors") +
   xlab("Number magnitude") +
-  ggtitle("B") +
+  ggtitle("B: outliers removed") +
   theme_plot +
-  theme(legend.position = "none", legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8))
+  theme(legend.position = "none", legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 15, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8))
 
 grid.arrange(SNARC.rt, SNARC.error,  nrow = 1)
 setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/plots")
 g <- arrangeGrob(SNARC.rt, SNARC.error, nrow = 1)
-  ggsave('SNARC_control.png', g,  width = 14, height = 7, units = 'cm', dpi = 300, type = 'cairo')
+  ggsave('SNARC_control_outliers_removed.png', g,  width = 14, height = 7, units = 'cm', dpi = 300, type = 'cairo')
   
 "mixed effects models"
-
 rt.control.mod <- glmer(RTs ~ response_hand * magnitude + (1 | participant),
                         family = Gamma(link = "identity"),
                         data = controltrue)
@@ -220,42 +230,50 @@ In this condition, participant is shown a picture of a police officer. This mean
 
 ```{r}
 exptrue <- workingdata %>%
-  dplyr::filter(condition == "exptrue")
+  dplyr::filter(condition == "exptrue") %>%
+  tidyr::drop_na() %>%
+  dplyr::mutate(sd_rt = sd(RTs)) %>%
+  dplyr::mutate(upper_rt = mean(RTs) + (2.5 * sd_rt)) %>%
+  dplyr::mutate(lower_rt = mean(RTs) - (2.5 * sd_rt)) %>%
+  dplyr::mutate(outlier = case_when(RTs > upper_rt | RTs < lower_rt ~ TRUE,
+                                    RTs < upper_rt | RTs > lower_rt ~ FALSE))
 
 "plotting SNARC effect on RT"
 SNARC.rt.lawyer <- ggplot(exptrue %>%
-         tidyr::drop_na() %>%
-         summarySE(measurevar = "RTs", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = RTs)) +
-         stat_summary(fun = mean, geom = "point") +
-         stat_summary(fun = mean, geom = "line") +
+                            dplyr::filter(outlier == FALSE) %>%
+                            tidyr::drop_na() %>%
+                            summarySE(measurevar = "RTs", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = RTs)) +
+  stat_summary(fun = mean, geom = "point") +
+  stat_summary(fun = mean, geom = "line") +
   geom_errorbar(aes(ymin = RTs - ci, ymax = RTs + ci), width = .1) +
   scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) + 
   ylab("RT (s)") +
   xlab("Number magnitude") +
-  ggtitle("A") +
+  ggtitle("A: outliers removed") +
   theme_plot +
-  theme(legend.position = c(0.50, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8))
+  theme(legend.position = c(0.40, 0.90), legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 15, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8))
 
 "plotting SNARC effect on errors"
 SNARC.error.lawyer <- ggplot(exptrue %>%
-         tidyr::drop_na() %>%
-         dplyr::group_by(magnitude, response_hand) %>%
-         dplyr::filter(accuracy == 0) %>%
-         dplyr::summarise(errors = n()) %>%
-         dplyr::ungroup() %>%
+                               dplyr::filter(outlier == FALSE) %>%
+                               tidyr::drop_na() %>%
+                               dplyr::group_by(magnitude, response_hand) %>%
+                               dplyr::filter(accuracy == 0) %>%
+                               dplyr::summarise(errors = n()) %>%
+                               dplyr::ungroup() %>%
          summarySE(measurevar = "errors", groupvars = c("magnitude", "response_hand")), aes(x = magnitude, color = response_hand, group = response_hand, y = errors)) +
          stat_summary(fun = mean, geom = "point") +
          stat_summary(fun = mean, geom = "line") +
   scale_colour_manual(name = "Response hand", labels = c("Left", "Right"), values = c("red", "blue")) +
   ylab("Number of errors") +
   xlab("Number magnitude") +
-  ggtitle("B") +
+  ggtitle("B: outliers removed") +
   theme_plot +
-  theme(legend.position = "none", legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 20, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8))
+  theme(legend.position = "none", legend.key.height = unit(0, 'cm'), legend.key.width = unit(0.5, 'cm'), legend.key.size = unit(0, 'cm'), strip.text.x = element_blank(), plot.title = element_text(size = 15, face = "bold"), panel.spacing = unit(2, "lines"), axis.title.x = element_text(size = 8), axis.text.x = element_text(size = 8), axis.title.y = element_text(size = 8), axis.text.y = element_text(size = 8), title = element_text(size = 7), legend.title = element_text(size = 8), legend.text = element_text(size = 8))
 
 setwd("C:/Users/pscmgo/OneDrive for Business/PhD/Project/Experiment_Code/valter/plots")
 g <- arrangeGrob(SNARC.rt.lawyer, SNARC.error.lawyer, nrow = 1)
-  ggsave('SNARC_lawyer.png', g,  width = 14, height = 7, units = 'cm', dpi = 300, type = 'cairo')
+  ggsave('SNARC_lawyer_outliers_removed.png', g,  width = 14, height = 7, units = 'cm', dpi = 300, type = 'cairo')
   
 "mixed effects models"
 rt.lawyer.mod <- glmer(RTs ~ response_hand * magnitude + (1 | participant),
